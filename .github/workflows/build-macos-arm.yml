@@ -1,0 +1,178 @@
+# macOS Apple Silicon — pipeline independiente.
+#
+# Un workflow por plataforma, a propósito: cada uno se puede disparar solo, re-correr
+# solo, y su log no se mezcla con el de las otras arquitecturas.
+name: Build — macOS Apple Silicon
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    uses: ./.github/workflows/verify.yml
+
+  build:
+    name: macOS Apple Silicon
+    needs: verify
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          # Los CUATRO lockfiles. Si solo se hashea el de la raíz, un cambio en
+          # server/ o electron/ no invalida la cache y se instalan versiones viejas.
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+            client/package-lock.json
+            electron/package-lock.json
+
+      - name: Install
+        run: npm run install:ci
+
+      # UN comando. El pipeline (electron/scripts/build.mjs) compila el backend, el
+      # frontend, prepara los recursos, baja el motor de Prisma que corresponde,
+      # compila el main, verifica y recién ahí empaqueta.
+      - name: Build
+        run: npm run dist:mac:arm
+
+      # ─────────────────────────────────────────────────────────────────
+      # Verificar que el INSTALADOR SIRVE. No que el build "terminó".
+      #
+      # Hasta ahora publicábamos .dmg que instalaban y no abrían. Estos chequeos
+      # son la diferencia entre un build verde y un build que funciona.
+      # ─────────────────────────────────────────────────────────────────
+      - name: Verificar la app
+        run: |
+          # RUTA ABSOLUTA, y no es un detalle: Node NO trata todas las rutas igual.
+          #
+          #     require('/abs/path/x')  → archivo
+          #     require('./rel/x')      → archivo
+          #     require('rel/path/x')   → NOMBRE DE PAQUETE → busca en node_modules
+          #
+          # Con `find electron/release ...` la ruta salía RELATIVA, y el require() de
+          # más abajo la leía como si fuera el nombre de un paquete. Fallaba con:
+          #
+          #     Cannot find module 'electron/release/mac-arm64/Finance OS.app/...'
+          #
+          # Y el mensaje hacía parecer que @prisma/client no estaba en el bundle.
+          # Estaba. El que estaba mal era este chequeo.
+          #
+          # Arrancar find desde $PWD devuelve rutas absolutas.
+          APP=$(find "$PWD/electron/release" -maxdepth 2 -name "*.app" | head -1)
+          test -n "$APP" || (echo "❌ no se encontró ningún .app en electron/release" && exit 1)
+          echo "App: $APP"; echo
+
+          # ── LA FIRMA ──
+          #
+          # Electron viene FIRMADO de fábrica (Apple lo exige para arm64).
+          # electron-builder le mete Resources/app adentro y ROMPE esa firma, y con
+          # identity:null no la rehace. Una firma ROTA no es lo mismo que SIN FIRMAR:
+          # macOS dice «la aplicación está dañada» y NO ABRE. En Apple Silicon el
+          # kernel directamente la mata.
+          #
+          # El afterPack firma ad-hoc (gratis, sin cuenta de Apple). Esto verifica que
+          # haya funcionado — y si no, el build muere en vez de publicar una app rota.
+          echo "▸ Firma"
+          codesign --verify --deep --strict --verbose=2 "$APP" \
+            || (echo "❌ FIRMA INVÁLIDA — esta app diría «dañada» y no abriría" && exit 1)
+          echo "✅ firma válida"; echo
+
+          echo "▸ Arquitectura"
+          lipo -archs "$APP/Contents/MacOS/Finance OS"; echo
+
+          # ── EL MOTOR: uno solo, y el correcto ──
+          echo "▸ Motor de Prisma"
+          E="$APP/Contents/Resources/app/node_modules/.prisma/client"
+          ls -1 "$E"/*.node
+          test -f "$E/libquery_engine-darwin-arm64.dylib.node" || (echo "❌ falta libquery_engine-darwin-arm64.dylib.node" && exit 1)
+          test "$(ls -1 "$E"/*.node | wc -l)" -eq 1 \
+            || (echo "❌ más de un motor: el build se contaminó" && exit 1)
+          echo "✅ un solo motor, el correcto"; echo
+
+          # ── ¿ESTÁ @prisma/client EN EL BUNDLE? ──
+          #
+          # Este chequeo existe para que el error NUNCA MÁS sea ambiguo.
+          #
+          # El require() de abajo puede fallar por DOS razones completamente distintas:
+          #   a) @prisma/client no está en el bundle          → problema de EMPAQUETADO
+          #   b) está, pero la ruta no se resuelve bien       → problema del CHEQUEO
+          #
+          # Node dice «Cannot find module» en los dos casos, y eso ya nos costó un
+          # sprint entero persiguiendo un bug de empaquetado que no existía.
+          #
+          # Con este test -d, si algún día falta de verdad, el error lo dice y punto.
+          echo "▸ @prisma/client en el bundle"
+          NM="$APP/Contents/Resources/app/node_modules"
+          CLIENT="$NM/@prisma/client"
+
+          # Se IMPRIME el árbol real, no se asume nada. Si algún día @prisma/client
+          # falta de verdad, este log lo muestra sin ambigüedad.
+          echo "   node_modules/ del bundle: $(ls -1 "$NM" | wc -l | tr -d ' ') paquetes"
+          echo "   ── contenido de @prisma/client ──"
+          ls -1 "$CLIENT" 2>/dev/null | sed 's/^/      /' \
+            || (echo "❌ FALTA @prisma/client — ESTO SÍ sería un problema de empaquetado" && exit 1)
+          echo ""
+
+          # default.js es EL archivo crítico: hace require('.prisma/client/default').
+          # Sin él, @prisma/client no sirve para nada aunque el directorio exista.
+          test -f "$CLIENT/default.js" \
+            || (echo "❌ falta default.js — @prisma/client está incompleto" && exit 1)
+          test -d "$CLIENT/runtime" \
+            || (echo "❌ falta runtime/ — @prisma/client está incompleto" && exit 1)
+          echo "✅ @prisma/client presente y completo (default.js + runtime/)"; echo
+
+          # ── ¿PRISMA CARGA DE VERDAD? ──
+          #
+          # Que los archivos existan NO significa que Node los resuelva. Ese fue
+          # exactamente el bug de «Cannot find module '.prisma/client/default'».
+          #
+          # OJO CON LA RUTA: tiene que ser ABSOLUTA. Node interpreta
+          # require('rel/path/x') como NOMBRE DE PAQUETE, no como archivo — y busca en
+          # node_modules. Por eso $APP se arma con $PWD arriba.
+          echo "▸ Prisma dentro del binario empaquetado"
+          ELECTRON_RUN_AS_NODE=1 "$APP/Contents/MacOS/Finance OS" -e "
+            const { PrismaClient } = require('$APP/Contents/Resources/app/node_modules/@prisma/client');
+            new PrismaClient();
+            console.log('✅ Prisma carga');
+          "
+
+      - name: Verificar y MONTAR el DMG
+        run: |
+          DMG=$(find electron/release -maxdepth 1 -name "*.dmg" | head -1)
+          echo "DMG: $DMG"; echo
+
+          # Un DMG es un disco. Si el layout o la firma quedan raros, macOS se niega a
+          # montarlo y dice «está dañado» — el MISMO mensaje que da una app rota.
+          # Esto separa los dos problemas en vez de confundirlos.
+          echo "▸ ¿Es un disco válido?"
+          hdiutil verify "$DMG" || (echo "❌ DMG CORRUPTO" && exit 1)
+          echo "✅ válido"; echo
+
+          echo "▸ ¿Monta?"
+          MP=$(mktemp -d)
+          hdiutil attach "$DMG" -mountpoint "$MP" -nobrowse -quiet \
+            || (echo "❌ NO MONTA" && exit 1)
+          ls -1 "$MP"
+          echo "✅ monta"; echo
+
+          echo "▸ La app DENTRO del DMG, ¿está firmada?"
+          codesign --verify --deep --strict "$MP/Finance OS.app" \
+            || (echo "❌ la app del DMG tiene la firma rota" && exit 1)
+          echo "✅ firma válida dentro del DMG"
+
+          hdiutil detach "$MP" -quiet
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: finance-os-macos-apple-silicon
+          if-no-files-found: error
+          path: |
+            electron/release/*.dmg
+            electron/release/*.zip

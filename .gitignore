@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+release/
+*.log
+.DS_Store
+
+# Secrets & local data
+.env
+*.db
+*.db-journal
+
+# Generated into the electron app root by scripts/prepare.mjs
+electron/prisma/

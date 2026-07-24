@@ -1,0 +1,189 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Finance OS — empaquetado
+#
+# REGLA ÚNICA E INNEGOCIABLE:
+#   TODAS las rutas de este archivo son relativas y viven DENTRO de electron/.
+#   Ninguna sale. Ninguna es absoluta. Ninguna empieza con "../".
+#
+#   `scripts/validate-config.mjs` verifica esto ANTES de empaquetar. Si algo se
+#   escapa, el build muere ahí y te dice exactamente qué ruta y a dónde apunta —
+#   en vez de fallar adentro del copiador con un críptico "must be under".
+# ─────────────────────────────────────────────────────────────────────────────
+
+appId: com.financeos.app
+productName: Finance OS
+# El copyright va en ASCII puro a propósito. rcedit (el que escribe el VersionInfo del .exe
+# en Windows) falla con "Unable to commit changes" cuando este campo tiene caracteres
+# no-ASCII como ©. "(c)" se ve igual en las propiedades del archivo y no rompe el build.
+copyright: (c) 2026 Finance OS
+
+directories:
+  # `app` NO se declara, a propósito. electron-builder usa el projectDir, que es
+  # donde vive este archivo. Declararlo explícito hace que él mismo avise:
+  #   "Specified application directory equals to project dir — superfluous or wrong"
+  # y no protege de nada: si el projectDir estuviera mal, un "." resolvería igual de
+  # mal. Lo que sí protege es validate-config.mjs, que verifica cada ruta.
+  output: release
+  buildResources: assets
+
+# ─────────────────────────────────────────────────────────────────────────────
+# QUÉ ENTRA A LA APP
+#
+# Esto es una LISTA BLANCA, no una lista negra. Un archivo que no matchea ninguno
+# de estos patrones NO ENTRA. No hay que excluir BUILD.md, ni README.md, ni .github,
+# ni el código fuente: no están en la lista, entonces no existen para el empaquetador.
+#
+# Las exclusiones de abajo son para lo que SÍ vive adentro de las carpetas incluidas.
+# ─────────────────────────────────────────────────────────────────────────────
+files:
+  # El proceso main, el preload, el React compilado y la API compilada.
+  # (build/main.js · build/preload.js · build/renderer/ · build/server/)
+  - build/**/*
+
+  # El schema de Prisma y el DDL que corre en el primer arranque.
+  - prisma/**/*
+
+  # Necesario: electron-builder lee "main" de acá para saber qué ejecutar.
+  - package.json
+
+
+  # ── Lo que NO entra, aunque viva adentro de las carpetas de arriba ──
+  - "!**/*.md"
+  - "!**/*.map" # los source maps triplican el tamaño y no sirven en producción
+  - "!**/*.ts"
+  - "!**/*.tsx"
+  - "!**/tsconfig*.json"
+  - "!**/.DS_Store"
+  - "!**/*.log"
+
+# node_modules NO va acá, a propósito.
+#
+# electron-builder incluye las `dependencies` de producción automáticamente y poda
+# las devDependencies. Ponerlo explícito en `files` es pedirle que empaquete también
+# electron (267 MB), electron-builder, typescript y el CLI de prisma: el instalador
+# pasaría de ~50 MB a varios cientos, para enviar herramientas que nadie va a correr.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ASAR
+#
+# El motor de consultas de Prisma es un binario nativo. El sistema operativo NO PUEDE
+# cargar un .node desde adentro de un archivo asar — necesita un archivo real en disco.
+# ─────────────────────────────────────────────────────────────────────────────
+asar: false
+
+extraResources:
+  - from: node_modules/.prisma
+    to: app/node_modules/.prisma
+
+# Corre después de empacar, antes del instalador. Si tira, no se genera nada.
+# Verifica que el motor de Prisma haya quedado adentro del paquete construido —
+# un cambio de config puede tirarlo en silencio, y la app instalaría sin driver.
+afterPack: scripts/after-pack.cjs
+
+# ─────────────────────────────────────────────────────────────────────────────
+# macOS — DOS BUILDS INDEPENDIENTES. NO universal.
+#
+#   npm run dist:mac:intel  →  "Finance OS Intel.dmg"          (x64)
+#   npm run dist:mac:arm    →  "Finance OS Apple Silicon.dmg"  (arm64)
+#
+# ─── POR QUÉ SE FUE EL UNIVERSAL ───
+#
+# Un binario universal exige que @electron/universal FUSIONE dos sub-builds, y eso
+# solo funciona si ambos contienen archivos idénticos. El motor de Prisma es nativo
+# por arquitectura, así que para cumplir esa condición había que meter LOS DOS motores
+# en LOS DOS sub-builds: ~15 MB muertos, y un merge más que puede fallar.
+#
+# Dos .dmg separados son más chicos, más simples, y no hay merge que romperse.
+#
+# ─── LO QUE HAY QUE SABER ───
+#
+# Un .dmg de Intel SÍ corre en Apple Silicon (Rosetta lo traduce).
+# Un .dmg de Apple Silicon NO corre en un Mac Intel: directamente no abre.
+#
+# Por eso los archivos se llaman "Intel" y "Apple Silicon" — como los llama Apple en
+# «Acerca de esta Mac» — y no "x64"/"arm64", que no le dicen nada a nadie.
+#
+# La ARQUITECTURA la elige el flag de la CLI (--x64 / --arm64), no este archivo: así
+# `prisma generate` y electron-builder siempre coinciden, porque los decide el mismo
+# script. Ver package.json → dist:mac:intel / dist:mac:arm.
+# ─────────────────────────────────────────────────────────────────────────────
+mac:
+  category: public.app-category.finance
+  icon: assets/icon.icns
+
+  target:
+    - dmg
+    - zip
+
+  # Fallback si alguien corre electron-builder --mac a mano. Los scripts de npm lo
+  # pisan con "Intel" / "Apple Silicon", que es lo que ve el usuario.
+  artifactName: ${productName} ${arch}.${ext}
+
+  # Sin firmar: firmar exige cuenta de Apple Developer (US$99/año).
+  # Consecuencia: macOS marca lo descargado con com.apple.quarantine y Gatekeeper
+  # muestra «is damaged and can't be opened». La app NO está dañada, está sin firmar.
+  # Se destraba con:  xattr -cr "/Applications/Finance OS.app"   (ver INSTALL.md)
+  identity: null
+  notarize: false
+
+  # NO correr `spctl --assess` después de empaquetar.
+  #
+  # Gatekeeper RECHAZA cualquier app que no esté notarizada — incluida una firmada
+  # ad-hoc. Si esto quedara en true, electron-builder fallaría el build por algo que
+  # ya sabemos y aceptamos: la app no está notarizada porque no hay cuenta de Apple.
+  gatekeeperAssess: false
+
+  # El hardened runtime EXIGE entitlements (JIT para V8, memoria ejecutable). Con una
+  # firma ad-hoc, activarlo hace que la app no arranque. Solo tiene sentido con un
+  # Developer ID real, y ahí es requisito para notarizar.
+  hardenedRuntime: false
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DMG
+#
+# Antes no estaba configurado y usaba los defaults. Ahora es explícito, porque un DMG
+# es un disco: si el layout o la firma quedan raros, macOS se niega a montarlo y dice
+# «está dañado» — que es lo mismo que dice cuando la app está rota, y confunde los
+# dos problemas.
+# ─────────────────────────────────────────────────────────────────────────────
+dmg:
+  # No intentar firmar el DMG: no hay certificado. Intentarlo aborta el build.
+  sign: false
+
+  # No escribimos metadata de auto-actualización: no usamos electron-updater.
+  writeUpdateInfo: false
+
+  # El layout clásico: la app a la izquierda, la carpeta Aplicaciones a la derecha,
+  # para arrastrar. Sin esto el DMG se abre vacío y el usuario no sabe qué hacer.
+  contents:
+    - x: 140
+      y: 190
+      type: file
+    - x: 400
+      y: 190
+      type: link
+      path: /Applications
+
+  window:
+    width: 540
+    height: 380
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Windows 10 y 11, x64.
+# ─────────────────────────────────────────────────────────────────────────────
+win:
+  icon: assets/icon.ico
+  target:
+    - target: nsis
+      arch: [x64]
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Finance OS
+  artifactName: ${productName} Setup.${ext}
+
+publish: null

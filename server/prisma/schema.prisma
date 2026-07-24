@@ -1,0 +1,377 @@
+generator client {
+  provider = "prisma-client-js"
+  // El server corre en la máquina donde está: el motor nativo alcanza.
+  //
+  // El EMPAQUETADO es otra historia: prepare.mjs reescribe binaryTargets al copiar
+  // este schema a electron/prisma/, según la plataforma que se esté empaquetando.
+  // Para macOS pide los dos motores (Intel + Apple Silicon) y así sale un solo .dmg
+  // universal; para Windows pide solo el de Windows, sin cargar 30 MB de motores de
+  // Mac que nadie va a usar.
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth ───
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  currency     String    @default("ARS")
+  // Set when the welcome wizard finishes. Null = brand new account.
+  onboardedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  accounts            Account[]
+  categories          Category[]
+  movements           Movement[]
+  investments         Investment[]
+  goals               Goal[]
+  debts               Debt[]
+  budgets             Budget[]
+  integrations        Integration[]
+  classificationRules ClassificationRule[]
+  refreshTokens       RefreshToken[]
+  passwordResets      PasswordReset[]
+  syncLogs            SyncLog[]
+  holdings            Holding[]
+  services            Service[]
+  servicePayments     ServicePayment[]
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+// ─── Accounts ───
+model Account {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  type           String   @default("OTHER")
+  currency       String   @default("ARS")
+  // Balance when the account was added. The CURRENT balance is never stored —
+  // it is derived from the movements, so it can never drift out of sync.
+  openingBalance Float    @default(0)
+  provider       String?
+  archived       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movements      Movement[] @relation("MovementAccount")
+  transfersIn    Movement[] @relation("MovementTransferAccount")
+  services       Service[]
+  @@index([userId])
+}
+
+// ─── Categories ───
+model Category {
+  id        String     @id @default(cuid())
+  userId    String
+  name      String
+  color     String     @default("#71717A")
+  /// Emoji opcional para reconocerla de un vistazo (🏠 🚗 🍔 …).
+  icon      String?
+  createdAt DateTime   @default(now())
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movements Movement[]
+  budgets   Budget[]
+  services  Service[]
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+// ─── Movements ───
+model Movement {
+  id          String   @id @default(cuid())
+  userId      String
+  // Huella del contenido. Si el proveedor devuelve la misma transacción con datos
+  // distintos (un pago que se acredita, un monto que se corrige), el hash cambia y
+  // el movimiento se ACTUALIZA en vez de ignorarse o duplicarse.
+  hash        String?
+  // Estado y medio de pago según el proveedor: approved/refunded, credit_card,
+  // debit_card, account_money, bank_transfer, QR…
+  status      String?
+  method      String?
+  accountId   String?
+  // Destination account for TRANSFER movements (money leaves accountId, lands here).
+  transferAccountId String?
+  categoryId  String?
+  type        String   // INCOME, EXPENSE, TRANSFER, INTERNAL, INVESTMENT, DEBT_PAYMENT, COLLECTION
+  amount      Float
+  currency    String   @default("ARS")
+  description String
+  counterpart String?
+  date        DateTime
+  source      String   @default("MANUAL") // MANUAL, MERCADO_PAGO
+  externalId  String?
+  raw         String?  // JSON string
+  createdAt   DateTime @default(now())
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account         Account?  @relation("MovementAccount", fields: [accountId], references: [id], onDelete: SetNull)
+  transferAccount Account?  @relation("MovementTransferAccount", fields: [transferAccountId], references: [id], onDelete: SetNull)
+  category        Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  servicePayment  ServicePayment?
+  @@unique([userId, source, externalId])
+  @@index([userId, date])
+  @@index([userId, type])
+}
+
+// ─── Investments ───
+model Investment {
+  id           String   @id @default(cuid())
+  userId       String
+  kind         String   // PESOS, USD, USDT, BTC, ETH, STOCK, FUND, FIXED_TERM
+  name         String
+  capital      Float
+  quantity     Float?
+  currentValue Float
+  currency     String   @default("ARS")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+// ─── Goals ───
+model Goal {
+  id        String    @id @default(cuid())
+  userId    String
+  name      String
+  target    Float
+  saved     Float     @default(0)
+  deadline  DateTime?
+  createdAt DateTime  @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+// ─── Debts ───
+model Debt {
+  id        String    @id @default(cuid())
+  userId    String
+  name      String
+  amount    Float
+  paid      Float     @default(0) // partial payments accumulate here
+  kind      String    @default("OWE") // OWE, OWED
+  dueDate   DateTime?
+  settled   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+// ─── Budgets ───
+model Budget {
+  id         String   @id @default(cuid())
+  userId     String
+  categoryId String
+  limit      Float
+  period     String   @default("MONTHLY")
+  createdAt  DateTime @default(now())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+// ─── Integrations ───
+model Integration {
+  id            String    @id @default(cuid())
+  userId        String
+  provider      String    // MERCADO_PAGO
+  status        String    @default("DISCONNECTED")
+  accessToken   String?
+  refreshToken  String?
+  externalUser  String?
+  lastSyncAt    DateTime?
+  importedCount Int       @default(0)
+  importFrom    DateTime?
+  // Balance as reported by Mercado Pago itself, used to reconcile against the
+  // balance we derive from movements. A mismatch means something did not import.
+  reportedBalance Float?
+  balanceAt       DateTime?
+  lastError       String?
+  // Vencimiento del access token. IOL: 15 minutos. Mercado Pago: mucho más.
+  // Guardarlo evita pegarle a la API solo para descubrir que el token venció.
+  expiresAt       DateTime?
+  scope           String?
+  // 0 = solo manual. Si no, cada cuántos minutos sincronizar.
+  syncIntervalMinutes Int      @default(0)
+  nextSyncAt          DateTime?
+  lastDurationMs      Int?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs SyncLog[]
+  @@unique([userId, provider])
+  @@index([userId])
+}
+
+// ─── Classification Rules ───
+model ClassificationRule {
+  id         String   @id @default(cuid())
+  userId     String
+  field      String   @default("counterpart")
+  matcher    String
+  categoryId String
+  hits       Int      @default(1)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, field, matcher])
+  @@index([userId])
+}
+
+model SyncLog {
+  id            String   @id @default(cuid())
+  userId        String
+  integrationId String?
+  provider      String   @default("MERCADO_PAGO")
+  status        String   // OK, PARTIAL, FAILED
+  imported      Int      @default(0)
+  skipped       Int      @default(0)
+  fees          Int      @default(0)
+  durationMs    Int      @default(0)
+  error         String?
+  createdAt     DateTime @default(now())
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  integration Integration? @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+/// Una posición de cartera (acción, CEDEAR, bono, FCI, ON).
+/// Los campos salen del PosicionModel documentado de IOL, sin inventar nada.
+model Holding {
+  id            String   @id @default(cuid())
+  userId        String
+  provider      String
+  ticker        String
+  name          String
+  /// ACCIONES, CEDEARS, BONOS, FCI, ON, OPCIONES — como lo llame el proveedor.
+  kind          String
+  quantity      Float
+  /// Precio promedio de compra (PPC en IOL).
+  avgPrice      Float
+  currentPrice  Float
+  totalValue    Float
+  gainAmount    Float
+  gainPct       Float
+  currency      String   @default("ARS")
+  market        String?
+  /// Posición cerrada: la vendiste o venció y IOL ya no la reporta. Se conserva de
+  /// historial (no se borra). Las abiertas son las que suman al patrimonio.
+  closed        Boolean  @default(false)
+  raw           String?  // JSON string (SQLite no tiene tipo Json)
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider, ticker])
+  @@index([userId])
+}
+
+// ─── Servicios y suscripciones ───
+// Gastos recurrentes conocidos: Spotify, alquiler, Monotributo, seguros.
+//
+// La diferencia con un Movement es el TIEMPO: un Movement ya pasó, un Service es algo
+// que se REPITE hacia adelante. Por eso el Forecast puede usar servicios como gasto
+// CONOCIDO en vez de adivinarlo por promedio, y por eso el dashboard puede decir cuánto
+// de tu plata ya está comprometido este mes.
+//
+// Lo que NO se guarda acá: el "próximo vencimiento". Es derivado — sale de frequency +
+// dueDay + los pagos ya hechos. Guardarlo sería el mismo error que guardar un saldo:
+// el día que una fecha se calcula mal y queda pegada, miente para siempre. Se calcula
+// en services-math.ts, que es puro y está testeado.
+model Service {
+  id         String   @id @default(cuid())
+  userId     String
+  name       String
+  categoryId String?
+  accountId  String?  // desde qué cuenta se paga (para saber el saldo comprometido)
+  amount     Float
+  currency   String   @default("ARS")
+  frequency  String   @default("MONTHLY") // MONTHLY, WEEKLY, YEARLY
+  interval   Int      @default(1)         // cada cuántos períodos: 3 + MONTHLY = trimestral
+  dueDay     Int?                         // día del mes en que vence (1-31)
+  autoDebit  Boolean  @default(false)     // débito automático: informativo, cambia el texto
+  active     Boolean  @default(true)
+  startDate  DateTime @default(now())
+  endDate    DateTime?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account  Account?         @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  category Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  payments ServicePayment[]
+
+  @@index([userId])
+  @@index([userId, active])
+}
+
+// El historial de pagos de un servicio: qué vencimiento se pagó, con qué movimiento.
+//
+// Sin esta tabla no se puede responder "¿Adobe aumentó?" ni "¿pagué el gimnasio este
+// mes?". Cada fila es un vencimiento concreto (dueDate) que puede estar pagado (paidAt +
+// movementId) o pendiente. El `amount` se copia del servicio al momento del pago: si
+// mañana sube, los pagos viejos conservan lo que costaban — que es justamente lo que
+// permite detectar el aumento.
+model ServicePayment {
+  id         String   @id @default(cuid())
+  userId     String
+  serviceId  String
+  dueDate    DateTime           // el vencimiento que representa
+  paidAt     DateTime?          // cuándo se pagó (null = pendiente)
+  movementId String?  @unique   // el movimiento que lo pagó (si se detectó)
+  amount     Float              // lo que costó ESE pago (no el precio actual del servicio)
+  createdAt  DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service  Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  movement Movement? @relation(fields: [movementId], references: [id], onDelete: SetNull)
+
+  @@unique([serviceId, dueDate]) // un servicio no puede tener dos veces el mismo vencimiento
+  @@index([userId])
+  @@index([serviceId])
+}
+
+// ─── Cotizaciones ───
+// El dólar NO es una integración con login: es un precio público. Se guarda con historial
+// (una fila por día y tipo) para poder valuar el patrimonio y mostrar la evolución.
+model FxRate {
+  id        String   @id @default(cuid())
+  kind      String   // MEP | OFICIAL | BLUE | CCL | CRIPTO
+  date      DateTime // día de la cotización (medianoche)
+  buy       Float?
+  sell      Float?
+  source    String?
+  fetchedAt DateTime @default(now())
+  @@unique([kind, date])
+  @@index([date])
+}
