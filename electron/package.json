@@ -1,0 +1,50 @@
+{
+  "name": "finance-os",
+  "productName": "Finance OS",
+  "version": "1.0.0",
+  "description": "Sistema operativo financiero personal",
+  "author": {
+    "name": "Gabriel N.",
+    "email": "hola@financeos.app"
+  },
+  "license": "MIT",
+  "main": "build/main.js",
+  "scripts": {
+    "prisma:generate": "prisma generate --schema=prisma/schema.prisma",
+    "compile": "tsc -p tsconfig.json",
+    "validate": "node scripts/validate-config.mjs",
+    "typecheck": "tsc --noEmit",
+    "icons": "python3 scripts/make_icons.py",
+    "build:electron": "node scripts/build.mjs",
+    "dist:win": "npm run build:electron -- --target=win && electron-builder --win --publish never",
+    "dist:mac:intel": "npm run build:electron -- --target=mac-intel && electron-builder --mac --x64 -c.mac.artifactName='${productName} Intel.${ext}' --publish never",
+    "dist:mac:arm": "npm run build:electron -- --target=mac-arm && electron-builder --mac --arm64 -c.mac.artifactName='${productName} Apple Silicon.${ext}' --publish never",
+    "dev": "npm run build:electron && electron .",
+    "pack": "npm run build:electron && electron-builder --dir --publish never",
+    "test": "tsx tests/migrations.test.ts",
+    "dist:mac": "npm run build:electron && electron-builder --mac --publish never",
+    "dist": "npm run build:electron && electron-builder --publish never"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "express-rate-limit": "^8.5.2",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.5",
+    "electron": "^32.2.0",
+    "electron-builder": "^25.1.8",
+    "prisma": "^5.22.0",
+    "sql.js": "^1.14.1",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2"
+  }
+}

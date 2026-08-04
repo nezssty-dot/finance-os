@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2021",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "outDir": "build",
+    "rootDir": "src",
+    "strict": true,
+    "esModuleInterop": true,
+    // OBLIGATORIO acá, y SOLO acá.
+    // electron.d.ts declara process.noDeprecation como `boolean`; @types/node lo
+    // declara como `boolean | undefined`. Los dos archivos viven en node_modules y
+    // ninguno es nuestro: sin esto no compila nada, y no hay forma de arreglarlo
+    // desde este lado. server/ y client/ tienen skipLibCheck en FALSE — ahí sí se
+    // chequea absolutamente todo.
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "sourceMap": false
+  },
+  "include": ["src/**/*.ts"]
+}

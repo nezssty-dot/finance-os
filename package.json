@@ -1,0 +1,44 @@
+{
+  "name": "finance-os-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Finance OS \u2014 sistema operativo financiero personal",
+  "scripts": {
+    "install:all": "npm --prefix server install && npm --prefix client install && npm --prefix electron install",
+    "install:ci": "npm ci && npm --prefix server ci && npm --prefix client ci && npm --prefix electron ci",
+    "dev:api": "npm --prefix server run dev",
+    "dev:web": "npm --prefix client run dev",
+    "dev:desktop": "npm --prefix electron run dev",
+    "db:setup": "npm --prefix server run prisma:generate && npm --prefix server run db:push",
+    "db:seed": "npm --prefix server run seed",
+    "prisma:generate": "npm --prefix server run prisma:generate",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "npm run typecheck:server && npm run typecheck:client && npm run typecheck:electron",
+    "typecheck:server": "npm --prefix server run typecheck",
+    "typecheck:client": "npm --prefix client run typecheck",
+    "typecheck:electron": "npm --prefix electron run typecheck",
+    "test": "npm --prefix server run test && npm --prefix client run test && npm --prefix electron run test",
+    "build:server": "npm --prefix server run build",
+    "build:client": "npm --prefix client run build",
+    "build": "npm run build:server && npm run build:client",
+    "ci": "npm run prisma:generate && npm run lint && npm run typecheck && npm run test && npm run build",
+    "build:electron": "npm --prefix electron run build:electron",
+    "pack": "npm --prefix electron run pack",
+    "dist:win": "npm --prefix electron run dist:win",
+    "dist:mac:intel": "npm --prefix electron run dist:mac:intel",
+    "dist:mac:arm": "npm --prefix electron run dist:mac:arm",
+    "dist:mac": "npm --prefix electron run dist:mac",
+    "dist": "npm --prefix electron run dist"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^15.15.0",
+    "typescript-eslint": "^8.63.0"
+  }
+}

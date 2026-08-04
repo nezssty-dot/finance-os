@@ -1,0 +1,53 @@
+# Gate de calidad. Reutilizable: los tres workflows de build lo llaman.
+#
+# Corre UNA sola vez, en el runner más barato, y falla rápido. Sin esto, un solo error
+# de TypeScript tira abajo los tres builds nativos y el log dice "exit code 2" desde
+# adentro de electron-builder.
+#
+# Definido acá una única vez: si estuviera copiado en los tres workflows, tarde o
+# temprano alguien cambia uno y se olvida de los otros dos.
+name: Verify
+
+on:
+  workflow_call:
+
+jobs:
+  verify:
+    name: Typecheck · Lint · Tests
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          # Los CUATRO lockfiles. Si solo se hashea el de la raíz, un cambio en
+          # server/ o electron/ no invalida la cache y se instalan versiones viejas.
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+            client/package-lock.json
+            electron/package-lock.json
+
+      # npm ci, no npm install. Instala EXACTAMENTE lo que dice el lockfile y FALLA
+      # si el lockfile no coincide con el package.json. npm install lo arreglaría en
+      # silencio — y ahí el build deja de ser reproducible.
+      - name: Install
+        run: npm run install:ci
+
+      # Explícito, no delegado a un postinstall. Sin el cliente generado, tsc no sabe
+      # qué es un Movement y cada llamada a Prisma se vuelve un error incomprensible.
+      - name: Prisma generate
+        run: npm run prisma:generate
+
+      - name: Typecheck (server · client · electron)
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm run test
+
+      - name: Build (server + client)
+        run: npm run build
