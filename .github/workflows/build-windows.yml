@@ -1,0 +1,98 @@
+# Windows x64 — pipeline independiente.
+#
+# Un workflow por plataforma, a propósito: cada uno se puede disparar solo, re-correr
+# solo, y su log no se mezcla con el de las otras arquitecturas.
+name: Build — Windows x64
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    uses: ./.github/workflows/verify.yml
+
+  build:
+    name: Windows x64
+    needs: verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          # Los CUATRO lockfiles. Si solo se hashea el de la raíz, un cambio en
+          # server/ o electron/ no invalida la cache y se instalan versiones viejas.
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+            client/package-lock.json
+            electron/package-lock.json
+
+      - name: Install
+        run: npm run install:ci
+
+      # Windows Defender (activo por defecto en los runners de GitHub) escanea el .exe
+      # recién empaquetado JUSTO cuando rcedit intenta escribirle el icono y el VersionInfo.
+      # Esa condición de carrera es lo que hace fallar a rcedit con "Unable to commit
+      # changes" — el archivo está tomado por otro proceso. Es también por qué el build
+      # anda en Mac (sin Defender) y no en Windows, con la MISMA config.
+      # Excluir el directorio de salida del escaneo elimina la carrera. No desactiva
+      # Defender entero ni toca nada del branding, el icono o el VersionInfo.
+      - name: Excluir el directorio de build del escaneo de Defender
+        shell: pwsh
+        run: |
+          Add-MpPreference -ExclusionPath "${{ github.workspace }}\electron\release"
+          Add-MpPreference -ExclusionProcess "rcedit-x64.exe"
+        continue-on-error: true
+
+      # UN comando. El pipeline (electron/scripts/build.mjs) compila el backend, el
+      # frontend, prepara los recursos, baja el motor de Prisma que corresponde,
+      # compila el main, verifica y recién ahí empaqueta.
+      - name: Build
+        run: npm run dist:win
+        env:
+          # electron-builder muestra el detalle completo de rcedit/winCodeSign con esto.
+          # Si algo falla, el log dice el comando exacto y el motivo, no un resumen.
+          DEBUG: electron-builder
+
+      # Si el build falló, dejar a la vista qué quedó en disco: ayuda a distinguir si
+      # rcedit llegó a crear el win-unpacked (falló al reescribir el .exe) o ni siquiera
+      # empaquetó. Corre solo ante fallo y no altera el resultado del job.
+      - name: Diagnóstico si el build falló
+        if: failure()
+        shell: bash
+        run: |
+          echo "▸ ¿Se generó win-unpacked?"
+          ls -la electron/release/win-unpacked 2>/dev/null || echo "  no existe"
+          echo "▸ Ejecutables en release/"
+          ls -la electron/release/*.exe 2>/dev/null || echo "  ninguno"
+
+      # Que el .exe exista no significa que la app abra. Esto verifica que Prisma
+      # RESUELVA dentro del binario empaquetado — el bug de «Cannot find module
+      # '.prisma/client/default'» pasaba todos los chequeos de archivos y moría acá.
+      - name: Verificar el paquete
+        shell: bash
+        run: |
+          APP="electron/release/win-unpacked"
+          echo "▸ Motor de Prisma"
+          E="$APP/resources/app/node_modules/.prisma/client"
+          ls -1 "$E"/*.node
+          test -f "$E/query_engine-windows.dll.node" \
+            || (echo "❌ falta el motor de Windows" && exit 1)
+          test "$(ls -1 "$E"/*.node | wc -l)" -eq 1 \
+            || (echo "❌ más de un motor" && exit 1)
+          echo "✅ un solo motor, el correcto"
+
+          echo "▸ ¿Existe el instalador?"
+          ls -1 electron/release/*.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: finance-os-windows
+          if-no-files-found: error
+          path: electron/release/*.exe

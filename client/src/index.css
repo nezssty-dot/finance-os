@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * ─── SISTEMA DE TEMAS + LIQUID GLASS (estilo iOS) ───
+ * Arranca en OSCURO. El usuario cambia a claro desde Configuración.
+ * Las superficies principales usan la clase .glass: vidrio translúcido con blur, sobre un
+ * fondo con manchas de color que se filtran a través del vidrio. Negro NEUTRO (sin tinte).
+ */
+
+:root, [data-theme="dark"] {
+  --c-accent: #2ee88f; --c-accent-2: #22c977;
+  --c-accent-dim: rgba(46,232,143,.12); --c-accent-line: rgba(46,232,143,.32);
+
+  /* Negro neutro de verdad (R=G=B). */
+  --c-bg: #060606; --c-bg-2: #0e0e0f;
+  --c-panel: #111112; --c-panel-2: #1a1a1c;
+  --c-line: #232325; --c-line-2: #323234; --c-track: #232325;
+
+  --c-txt: #ededed; --c-txt-2: #98989a; --c-txt-3: #636365;
+
+  --c-success: #2ee88f; --c-success-dim: rgba(46,232,143,.14);
+  --c-danger: #ff6b6b; --c-danger-dim: rgba(255,107,107,.13);
+  --c-warning: #f5c518; --c-warning-dim: rgba(245,197,24,.14);
+  --c-info: #5b9bd4; --c-info-dim: rgba(91,155,212,.14);
+  --c-violet: #a78bfa; --c-violet-dim: rgba(167,139,250,.14);
+
+  /* Vidrio */
+  --c-glass: rgba(28,28,32,.55); --c-glass-2: rgba(38,38,44,.5);
+  --c-glass-border: rgba(255,255,255,.10); --c-glass-hi: rgba(255,255,255,.06);
+  --glass-blur: blur(28px) saturate(160%);
+}
+
+[data-theme="light"] {
+  --c-accent: #00c853; --c-accent-2: #00a844;
+  --c-accent-dim: rgba(0,200,83,.12); --c-accent-line: rgba(0,200,83,.32);
+  --c-bg: #e8ebf0; --c-bg-2: #dfe3ea;
+  --c-panel: #ffffff; --c-panel-2: #f2f4f6;
+  --c-line: #e8eaee; --c-line-2: #dde0e5; --c-track: #e8eaee;
+  --c-txt: #14171a; --c-txt-2: #5f6b73; --c-txt-3: #9aa3ab;
+  --c-success: #00a844; --c-success-dim: rgba(0,200,83,.13);
+  --c-danger: #e5484d; --c-danger-dim: rgba(229,72,77,.11);
+  --c-warning: #d99e00; --c-warning-dim: rgba(217,158,0,.15);
+  --c-info: #3b6cb5; --c-info-dim: rgba(59,108,181,.12);
+  --c-violet: #7c5cfc; --c-violet-dim: rgba(124,92,252,.12);
+  --c-glass: rgba(255,255,255,.6); --c-glass-2: rgba(255,255,255,.5);
+  --c-glass-border: rgba(255,255,255,.7); --c-glass-hi: rgba(255,255,255,.5);
+}
+
+html, body { background: var(--c-bg); transition: background .25s ease; }
+
+/* Fondo con manchas de color: lo que le da vida al vidrio (estilo iOS). Fijo, detrás de todo. */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(650px circle at 8% 6%, rgba(46,232,143,.18), transparent 42%),
+    radial-gradient(720px circle at 92% 20%, rgba(91,155,212,.14), transparent 46%),
+    radial-gradient(600px circle at 78% 94%, rgba(167,139,250,.13), transparent 42%),
+    radial-gradient(520px circle at 18% 90%, rgba(245,197,24,.09), transparent 40%);
+}
+[data-theme="light"] body::before { opacity: .8; }
+#root { position: relative; z-index: 1; }
+
+/* ─── CLASE VIDRIO reutilizable ─── */
+.glass {
+  background: var(--c-glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--c-glass-border) !important;
+  box-shadow: 0 8px 32px var(--c-glass-shadow, rgba(0,0,0,.28)), inset 0 1px 0 var(--c-glass-hi);
+}
+
+::-webkit-scrollbar { width: 9px; }
+::-webkit-scrollbar-thumb { background: var(--c-line); border-radius: 9px; border: 2px solid transparent; background-clip: padding-box; }
+::selection { background: var(--c-accent-dim); }
