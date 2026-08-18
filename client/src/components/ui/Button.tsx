@@ -9,10 +9,12 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: React.ReactNode
 }
 
+// Pills sólidas, sin borde — así se ven los botones en el kit de Figma (fondo plano,
+// nunca contorno).
 const styles: Record<Variant, string> = {
   primary: 'bg-gold text-black hover:bg-gold-2 font-semibold',
-  ghost: 'bg-panel border border-line text-txt-2 hover:bg-panel-2 hover:text-txt hover:border-line-2',
-  danger: 'bg-panel border border-line text-danger hover:bg-danger/10',
+  ghost: 'bg-panel-2 text-txt-2 hover:bg-line-2 hover:text-txt',
+  danger: 'bg-panel-2 text-danger hover:bg-danger/10',
 }
 
 export const Button = forwardRef<HTMLButtonElement, Props>(

@@ -119,6 +119,11 @@ model Movement {
   // Destination account for TRANSFER movements (money leaves accountId, lands here).
   transferAccountId String?
   categoryId  String?
+  // Presupuesto tipo PROJECT al que se asignó a mano este movimiento (ver Budget arriba).
+  // Sin FK a nivel SQLite (ADD COLUMN no soporta agregar constraints) — al borrar un
+  // Budget, budgets.ts limpia este campo a mano antes de borrar, así nunca queda
+  // colgando un id que ya no existe.
+  budgetId    String?
   type        String   // INCOME, EXPENSE, TRANSFER, INTERNAL, INVESTMENT, DEBT_PAYMENT, COLLECTION
   amount      Float
   currency    String   @default("ARS")
@@ -133,10 +138,12 @@ model Movement {
   account         Account?  @relation("MovementAccount", fields: [accountId], references: [id], onDelete: SetNull)
   transferAccount Account?  @relation("MovementTransferAccount", fields: [transferAccountId], references: [id], onDelete: SetNull)
   category        Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  budget          Budget?   @relation(fields: [budgetId], references: [id])
   servicePayment  ServicePayment?
   @@unique([userId, source, externalId])
   @@index([userId, date])
   @@index([userId, type])
+  @@index([userId, budgetId])
 }
 
 // ─── Investments ───
@@ -184,15 +191,27 @@ model Debt {
 }
 
 // ─── Budgets ───
+// Dos formas de presupuesto conviven acá:
+//   CATEGORY — el original: un límite mensual atado a UNA categoría. `spent` sale de
+//              sumar los movimientos de esa categoría en el mes (ver budgets.ts).
+//   PROJECT  — para algo que cruza categorías (ej. "Viaje a Buenos Aires": transporte +
+//              comida + lo que sea). No tiene categoryId fijo; junta los movimientos que
+//              se le asignaron a mano (Movement.budgetId), sin recorte por mes — un viaje
+//              no dura un mes calendario.
+// `categoryId` es opcional porque PROJECT no tiene una sola categoría. `name` es el
+// título visible para PROJECT (CATEGORY sigue mostrando category.name, como siempre).
 model Budget {
   id         String   @id @default(cuid())
   userId     String
-  categoryId String
+  categoryId String?
+  name       String?
+  type       String   @default("CATEGORY")
   limit      Float
   period     String   @default("MONTHLY")
   createdAt  DateTime @default(now())
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  Category?  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  movements Movement[]
   @@index([userId])
 }
 

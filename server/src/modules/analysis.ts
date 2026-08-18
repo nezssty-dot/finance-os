@@ -243,7 +243,11 @@ analysisRouter.get(
         if (new Date(m.date) < monthStart) continue;
         spent[m.categoryId] = (spent[m.categoryId] ?? 0) + Number(m.amount);
       }
+      // Los presupuestos tipo PROJECT (sin categoría fija, ej. "Viaje a Buenos Aires")
+      // no tienen un "ritmo mensual por categoría" que insight-ear acá — su seguimiento
+      // vive en la pantalla de Presupuestos.
       for (const b of budgets) {
+        if (b.type !== "CATEGORY" || !b.categoryId || !b.category) continue;
         const used = spent[b.categoryId] ?? 0;
         const limit = Number(b.limit);
         const projected = dayOfMonth > 0 ? (used / dayOfMonth) * daysInMonth : 0;

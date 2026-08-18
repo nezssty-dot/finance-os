@@ -60,7 +60,11 @@ export const categoriesRouter: Router = crudRouter("category", { create, update 
         movementCounts.map((r) => [r.categoryId as string, Number(r._sum?.amount ?? 0)])
       );
       const budgetsBy = new Map<string, number>();
-      for (const b of budgets) budgetsBy.set(b.categoryId, (budgetsBy.get(b.categoryId) ?? 0) + 1);
+      for (const b of budgets) {
+        // Los presupuestos tipo PROJECT no tienen categoryId — no cuentan acá.
+        if (!b.categoryId) continue;
+        budgetsBy.set(b.categoryId, (budgetsBy.get(b.categoryId) ?? 0) + 1);
+      }
 
       const items = categories.map((c) => ({
         id: c.id,

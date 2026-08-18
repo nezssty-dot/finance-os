@@ -9,6 +9,14 @@ import { WealthCard, Card, MovementRow, InteractiveDonut, EmptyState, AsyncGate,
 import { HealthCard } from '@/components/HealthCard'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
+const FX_LABEL: Record<string, string> = {
+  MEP: 'Dólar MEP',
+  OFICIAL: 'Dólar Oficial',
+  BLUE: 'Dólar Blue',
+  CCL: 'Contado con Liqui',
+  CRIPTO: 'Dólar Cripto',
+}
+
 export function Dashboard() {
   const { year } = useStore()
   const { data: dash, loading: ld, error: dashErr, refetch: dashRefetch } = useFetch<any>(`/analysis/dashboard?year=${year}`, [year])
@@ -17,6 +25,9 @@ export function Dashboard() {
   const { data: health } = useFetch<any>('/analysis/health')
   const { data: cats } = useFetch<any[]>('/categories')
   const { data: accts } = useFetch<any[]>('/accounts')
+  const { data: fx } = useFetch<any>('/fx')
+  const { data: budgets } = useFetch<any[]>('/budgets')
+  const projects = (budgets ?? []).filter((b: any) => b.type === 'PROJECT')
   const [quickAdd, setQuickAdd] = useState(false)
   const [savingMov, setSavingMov] = useState(false)
 
@@ -65,7 +76,7 @@ export function Dashboard() {
                 const color = c.tone === 'expense' ? 'text-danger' : positive ? 'text-success' : 'text-danger'
                 const sign = c.tone === 'balance' && c.value !== 0 ? (c.value > 0 ? '+' : '') : c.tone === 'income' && c.value > 0 ? '+' : ''
                 return (
-                  <div key={c.label} className="bg-bg-1 border border-bg-2 rounded-[12px] p-3.5 flex flex-col items-center text-center justify-center">
+                  <div key={c.label} className="bg-panel-2 rounded-[14px] p-3.5 flex flex-col items-center text-center justify-center">
                     <div className="text-[11px] text-txt-3 mb-1.5 leading-tight">{c.label}</div>
                     <div className={`font-mono font-bold text-[17px] leading-none ${color}`}>{sign}{ARS(Math.abs(c.value))}</div>
                   </div>
@@ -74,6 +85,14 @@ export function Dashboard() {
             </div>
           )
         })()}
+        {/* Patrimonio Neto en grande, como el "Total Balance" del Figma: la tarjeta hero
+            verde manda sobre todo lo demás — es el único número que importa de un vistazo. */}
+        <div className="rounded-card p-6 mb-4" style={{ background: 'var(--c-accent)' }}>
+          <div className="text-[13px] font-semibold text-black/60 uppercase tracking-wider mb-1.5">Patrimonio Neto</div>
+          <div className="text-[42px] leading-none font-bold font-mono text-black tabular-nums">{ARS(p.neto)}</div>
+          <div className="text-[12.5px] text-black/60 mt-2.5">Todo menos lo que debés</div>
+        </div>
+
         {(() => {
           // Se arma la lista de tarjetas primero, filtrando las que no aplican (USD solo si
           // hay saldo en dólares, "disponible real" solo si hay servicios comprometidos).
@@ -81,7 +100,6 @@ export function Dashboard() {
           // realmente existen. Antes eran 6 columnas fijas con 6 a 8 tarjetas condicionales,
           // y la última fila quedaba desalineada.
           const wealthCards = [
-            { key: 'neto', label: 'Patrimonio Neto', value: p.neto, hero: true, sub: 'Todo menos lo que debés', accent: 'green' as const },
             { key: 'disp', label: 'Disponible', value: p.disponible, sub: 'En cuentas (ARS)', accent: 'green' as const },
             usdDisponible !== 0 && { key: 'dispUsd', label: 'Disponible USD', value: usdDisponible, currency: 'USD', sub: 'En cuentas en dólares', accent: 'blue' as const },
             committedARS > 0 && { key: 'dispReal', label: 'Disponible Real', value: disponibleReal, sub: `Menos ${ARS(committedARS)} en servicios`, tone: 'auto' as const },
@@ -112,6 +130,23 @@ export function Dashboard() {
           )
         })()}
 
+        {fx?.quotes?.length > 0 && (
+          <Card className="mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold">Cotización del dólar</h3>
+              {fx.stale && <span className="text-[11px] text-txt-3">Puede no ser de hoy</span>}
+            </div>
+            <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+              {fx.quotes.map((q: any) => (
+                <div key={q.kind} className="bg-panel-2 rounded-[14px] p-3 flex flex-col gap-1">
+                  <span className="text-[11px] text-txt-3">{FX_LABEL[q.kind] ?? q.kind}</span>
+                  <span className="font-mono font-bold text-[15px]">{ARS(q.sell ?? q.buy ?? 0)}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
         {chartData.length > 1 && (
           <Card className="mb-4">
             <h3 className="text-sm font-semibold mb-3">Evolución del ahorro</h3>
@@ -119,14 +154,14 @@ export function Dashboard() {
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#2ee88f" stopOpacity={0.25} />
-                    <stop offset="100%" stopColor="#2ee88f" stopOpacity={0} />
+                    <stop offset="0%" stopColor="#1aff79" stopOpacity={0.25} />
+                    <stop offset="100%" stopColor="#1aff79" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#5c6660' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#5c6660' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${(v / 1e6).toFixed(1)}M`} width={42} />
-                <Tooltip cursor={{ stroke: 'rgba(46,232,143,0.3)', strokeWidth: 1 }} contentStyle={{ background: '#0e1211', border: '1px solid #1b2320', borderRadius: 10, fontSize: 13 }} labelStyle={{ color: '#ededed', fontWeight: 600, marginBottom: 2 }} itemStyle={{ color: '#ededed' }} formatter={(v: number) => [ARS(v), 'Ahorro']} />
-                <Area type="monotone" dataKey="ahorro" stroke="#2ee88f" strokeWidth={2.5} fill="url(#goldGrad)" dot={{ r: 3, fill: '#2ee88f', stroke: '#0e1211', strokeWidth: 2 }} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#7a7a7a' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#7a7a7a' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${(v / 1e6).toFixed(1)}M`} width={42} />
+                <Tooltip cursor={{ stroke: 'rgba(26,255,121,0.3)', strokeWidth: 1 }} contentStyle={{ background: '#0d0d0d', border: '1px solid #262626', borderRadius: 14, fontSize: 13 }} labelStyle={{ color: '#ffffff', fontWeight: 600, marginBottom: 2 }} itemStyle={{ color: '#ffffff' }} formatter={(v: number) => [ARS(v), 'Ahorro']} />
+                <Area type="monotone" dataKey="ahorro" stroke="#1aff79" strokeWidth={2.5} fill="url(#goldGrad)" dot={{ r: 3, fill: '#1aff79', stroke: '#0d0d0d', strokeWidth: 2 }} />
               </AreaChart>
             </ResponsiveContainer>
           </Card>
@@ -134,7 +169,7 @@ export function Dashboard() {
 
         {svcSummary?.nextPayment && (
           <Link to="/servicios" className="block mb-4">
-            <Card className="hover:border-line-2 transition">
+            <Card className="hover:bg-panel-2 transition-colors">
               <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-2.5">
                   <span className="w-8 h-8 rounded-lg bg-gold/10 grid place-items-center shrink-0">
@@ -214,6 +249,7 @@ export function Dashboard() {
                   date: f.get('date'),
                   categoryId: f.get('categoryId') || null,
                   accountId: f.get('accountId') || null,
+                  budgetId: f.get('budgetId') || null,
                 },
               })
               setQuickAdd(false)
@@ -246,6 +282,12 @@ export function Dashboard() {
               {(accts ?? []).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </Select>
           </div>
+          {projects.length > 0 && (
+            <Select name="budgetId" label="Presupuesto de proyecto (opcional)" defaultValue="">
+              <option value="">Sin asignar</option>
+              {projects.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </Select>
+          )}
           <div className="flex gap-3 mt-5">
             <Button type="button" className="flex-1" onClick={() => setQuickAdd(false)}>Cancelar</Button>
             <Button variant="primary" type="submit" className="flex-1" disabled={savingMov}>Guardar</Button>

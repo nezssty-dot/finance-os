@@ -165,6 +165,61 @@ export const MIGRATIONS: Migration[] = [
     // pantalla muestra la inicial, como hasta ahora.
     statements: [`ALTER TABLE "Category" ADD COLUMN "icon" TEXT`],
   },
+  {
+    version: 6,
+    name: "Budget por proyecto (multi-categoría) + Movement.budgetId",
+    // Hasta acá un Budget era SIEMPRE una categoría con un límite mensual. Esto agrega un
+    // segundo tipo, PROJECT: un presupuesto sin categoría fija (ej. "Viaje a Buenos
+    // Aires") al que se le asignan movimientos de cualquier categoría a mano.
+    //
+    // `Movement.budgetId` es un ADD COLUMN simple — nullable, sin FK a nivel SQLite:
+    // `ALTER TABLE ADD COLUMN` no soporta agregar constraints, y Movement es la tabla más
+    // grande de la base, así que no vale la pena la danza de tabla nueva ahí. La limpieza
+    // al borrar un Budget la hace budgets.ts a mano (pone budgetId en NULL antes de
+    // borrar), así nunca queda un movimiento apuntando a un presupuesto que ya no existe.
+    //
+    // `Budget.categoryId` sí necesita el rebuild completo: pasa de NOT NULL a nullable
+    // (PROJECT no tiene una sola categoría), y SQLite no tiene forma de aflojar un NOT
+    // NULL con ALTER TABLE. Budget es chica (unas pocas filas por usuario) — acá el
+    // rebuild es barato y seguro.
+    //
+    // El primer CREATE TABLE IF NOT EXISTS cubre el caso límite de una base que por lo
+    // que sea todavía no tiene "Budget" (nunca pasa en producción — schema.sql la trae
+    // desde la v1 — pero si pasara, sin esto el rebuild de abajo fallaría con "no such
+    // table: Budget" al copiar de una tabla que no existe).
+    statements: [
+      `ALTER TABLE "Movement" ADD COLUMN "budgetId" TEXT`,
+      `CREATE INDEX IF NOT EXISTS "Movement_userId_budgetId_idx" ON "Movement"("userId", "budgetId")`,
+      `CREATE TABLE IF NOT EXISTS "Budget" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "userId" TEXT NOT NULL,
+        "categoryId" TEXT,
+        "name" TEXT,
+        "type" TEXT NOT NULL DEFAULT 'CATEGORY',
+        "limit" REAL NOT NULL,
+        "period" TEXT NOT NULL DEFAULT 'MONTHLY',
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `DROP TABLE IF EXISTS "Budget_new"`,
+      `CREATE TABLE "Budget_new" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "userId" TEXT NOT NULL,
+        "categoryId" TEXT,
+        "name" TEXT,
+        "type" TEXT NOT NULL DEFAULT 'CATEGORY',
+        "limit" REAL NOT NULL,
+        "period" TEXT NOT NULL DEFAULT 'MONTHLY',
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "Budget_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT "Budget_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+      )`,
+      `INSERT INTO "Budget_new" ("id", "userId", "categoryId", "name", "type", "limit", "period", "createdAt")
+        SELECT "id", "userId", "categoryId", NULL, 'CATEGORY', "limit", "period", "createdAt" FROM "Budget"`,
+      `DROP TABLE "Budget"`,
+      `ALTER TABLE "Budget_new" RENAME TO "Budget"`,
+      `CREATE INDEX IF NOT EXISTS "Budget_userId_idx" ON "Budget"("userId")`,
+    ],
+  },
 ];
 
 /** La versión a la que debe llegar la base. Se deriva sola: no hay que acordarse. */

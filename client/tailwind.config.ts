@@ -32,7 +32,7 @@ export default {
         sans: ['Poppins', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'system-ui', 'sans-serif'],
         mono: ['SF Mono', 'Cascadia Code', 'Consolas', 'ui-monospace', 'monospace'],
       },
-      borderRadius: { card: '20px', btn: '999px' },
+      borderRadius: { card: '26px', btn: '999px' },
       animation: { 'fade-in': 'fadeIn .22s ease', 'spin-slow': 'spin .8s linear infinite' },
       keyframes: { fadeIn: { from: { opacity: '0', transform: 'translateY(8px)' }, to: { opacity: '1', transform: 'none' } } },
     },

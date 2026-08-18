@@ -87,6 +87,7 @@ CREATE TABLE IF NOT EXISTS "Movement" (
     "accountId" TEXT,
     "transferAccountId" TEXT,
     "categoryId" TEXT,
+    "budgetId" TEXT,
     "type" TEXT NOT NULL,
     "amount" REAL NOT NULL,
     "currency" TEXT NOT NULL DEFAULT 'ARS',
@@ -101,10 +102,15 @@ CREATE TABLE IF NOT EXISTS "Movement" (
     CONSTRAINT "Movement_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "Account" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "Movement_transferAccountId_fkey" FOREIGN KEY ("transferAccountId") REFERENCES "Account" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "Movement_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    -- "budgetId" NO lleva FK a propósito: Budget puede reconstruirse (rebuild de tabla,
+    -- ver migración v6 en electron/src/migrations.ts) y un FK real hace fallar ese
+    -- DROP TABLE con "FOREIGN KEY constraint failed" incluso dentro de la misma
+    -- transacción. La limpieza al borrar un Budget la hace budgets.ts a mano.
 );
 CREATE UNIQUE INDEX IF NOT EXISTS "Movement_userId_source_externalId_key" ON "Movement"("userId", "source", "externalId");
 CREATE INDEX IF NOT EXISTS "Movement_userId_date_idx" ON "Movement"("userId", "date");
 CREATE INDEX IF NOT EXISTS "Movement_userId_type_idx" ON "Movement"("userId", "type");
+CREATE INDEX IF NOT EXISTS "Movement_userId_budgetId_idx" ON "Movement"("userId", "budgetId");
 
 -- ─────────────────────────── Investments ───────────────────────────
 
@@ -154,7 +160,9 @@ CREATE INDEX IF NOT EXISTS "Debt_userId_idx" ON "Debt"("userId");
 CREATE TABLE IF NOT EXISTS "Budget" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
-    "categoryId" TEXT NOT NULL,
+    "categoryId" TEXT,
+    "name" TEXT,
+    "type" TEXT NOT NULL DEFAULT 'CATEGORY',
     "limit" REAL NOT NULL,
     "period" TEXT NOT NULL DEFAULT 'MONTHLY',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

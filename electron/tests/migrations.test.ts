@@ -169,7 +169,9 @@ async function main() {
   await test("agregar una columna a una tabla existente SÍ funciona", async () => {
     const db = new SQL.Database();
     await migrate(adapter(db), BASELINE);
-    db.run(`INSERT INTO "Movement" VALUES ('m1', 999)`);
+    // Por columna, no posicional: MIGRATIONS (real) le agrega columnas a "Movement" antes
+    // de llegar acá (ej. v6 suma "budgetId"), así que la cantidad de columnas no es fija.
+    db.run(`INSERT INTO "Movement" ("id", "amount") VALUES ('m1', 999)`);
 
     // Así se va a ver la migración del sprint que viene (§5: tags, notas, subcategoría).
     const next: Migration[] = [

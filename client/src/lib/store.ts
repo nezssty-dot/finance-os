@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { api, setToken, getToken } from './api'
+import { api, setToken } from './api'
 
 export type User = {
   id: string
@@ -57,17 +57,13 @@ export const useStore = create<AppState>((set) => ({
   },
 
   checkAuth: async () => {
-    if (!getToken()) {
-      try {
-        const r = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
-        if (!r.ok) { set({ loading: false }); return false }
-        const d = await r.json()
-        setToken(d.accessToken)
-      } catch { set({ loading: false }); return false }
-    }
+    // Finance OS es local y de un solo usuario por máquina: no hay credenciales que
+    // pedir. Esta ruta resuelve (o crea, la primera vez) el usuario dueño de esta
+    // instalación y abre sesión sola, sin pasar por /login.
     try {
-      const user = await api<User>('/auth/me')
-      set({ user, loading: false })
+      const d = await api<{ accessToken: string; user: User }>('/auth/local', { method: 'POST' })
+      setToken(d.accessToken)
+      set({ user: d.user, loading: false })
       return true
     } catch { set({ loading: false }); return false }
   },

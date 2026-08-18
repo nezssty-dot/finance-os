@@ -1,6 +1,5 @@
 import { useState, useRef } from 'react'
 import { getStoredTheme, applyTheme, type Theme } from '@/lib/theme'
-import { useNavigate } from 'react-router-dom'
 import { useStore } from '@/lib/store'
 import { useFetch, useMutate } from '@/hooks/useFetch'
 import { useToast } from '@/lib/toast'
@@ -19,9 +18,8 @@ const CURRENCIES = [
 ]
 
 export function Configuracion() {
-  const { user, setUser, logout } = useStore()
+  const { user, setUser } = useStore()
   const toast = useToast()
-  const navigate = useNavigate()
   const { mutate, saving } = useMutate()
 
   const [confirmRestore, setConfirmRestore] = useState<any | null>(null)
@@ -74,27 +72,6 @@ export function Configuracion() {
     )
   }
 
-  async function changePassword(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    const form = e.currentTarget
-    const f = new FormData(form)
-
-    if (f.get('newPassword') !== f.get('confirm')) {
-      toast('Las contraseñas nuevas no coinciden', 'error')
-      return
-    }
-
-    const ok = await mutate(
-      () =>
-        api('/users/me/password', {
-          method: 'POST',
-          body: { currentPassword: f.get('currentPassword'), newPassword: f.get('newPassword') },
-        }),
-      { toast, success: 'Contraseña actualizada. Se cerraron las demás sesiones.' }
-    )
-    if (ok) form.reset()
-  }
-
   async function backup() {
     setBusy('backup')
     try {
@@ -140,11 +117,6 @@ export function Configuracion() {
       toast(e.message || 'Falló la restauración', 'error')
       setBusy(null)
     }
-  }
-
-  async function doLogout() {
-    await logout()
-    navigate('/login')
   }
 
   const counts = confirmRestore?.counts ?? {}
@@ -204,20 +176,6 @@ export function Configuracion() {
             </form>
           </Card>
 
-          <Card title="Contraseña">
-            <form onSubmit={changePassword}>
-              <Input name="currentPassword" label="Contraseña actual" type="password" required autoComplete="current-password" />
-              <div className="grid sm:grid-cols-2 gap-3">
-                <Input name="newPassword" label="Nueva contraseña" type="password" required minLength={8} autoComplete="new-password" />
-                <Input name="confirm" label="Repetila" type="password" required minLength={8} autoComplete="new-password" />
-              </div>
-              <p className="text-[11.5px] text-txt-3 -mt-1 mb-3">
-                Al cambiarla se cierran todas las demás sesiones abiertas.
-              </p>
-              <Button type="submit" variant="primary" loading={saving}>Cambiar contraseña</Button>
-            </form>
-          </Card>
-
           <Card title="Tus datos">
             <p className="text-[13px] text-txt-2 leading-relaxed mb-4">
               El backup es un archivo JSON con todo: cuentas, movimientos, inversiones,
@@ -262,13 +220,6 @@ export function Configuracion() {
             <p className="text-[11.5px] text-txt-3 mt-3">
               Se puede correr las veces que quieras: no duplica nada.
             </p>
-          </Card>
-
-          <Card title="Sesión">
-            <p className="text-[13px] text-txt-2 mb-4">
-              Tus datos quedan guardados en esta computadora. Cerrar sesión no borra nada.
-            </p>
-            <Button onClick={doLogout}>Cerrar sesión</Button>
           </Card>
         </div>
       </div>

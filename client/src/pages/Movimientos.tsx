@@ -47,6 +47,8 @@ export function Movimientos() {
   const { data, loading } = useFetch<any>(`/movements?${params}`, [year, q, type, categoryId, accountId, month, sort, order, page])
   const { data: categories } = useFetch<any[]>('/categories')
   const { data: accounts } = useFetch<any[]>('/accounts')
+  const { data: budgets } = useFetch<any[]>('/budgets')
+  const projects = (budgets ?? []).filter((b) => b.type === 'PROJECT')
 
   function openNew() {
     setEditing(null)
@@ -69,6 +71,7 @@ export function Movimientos() {
       accountId: f.get('accountId') || undefined,
       categoryId: f.get('categoryId') || undefined,
       transferAccountId: f.get('transferAccountId') || undefined,
+      budgetId: f.get('budgetId') || null,
     }
     const ok = await mutate(
       () =>
@@ -161,6 +164,7 @@ export function Movimientos() {
                     <div className="flex items-center gap-2 mt-0.5">
                       <Badge color={neutral ? '#6a6a74' : pos ? '#5bbf7a' : '#d9615c'}>{LABEL[m.type] ?? m.type}</Badge>
                       {m.category && <Badge color={m.category.color}>{m.category.name}</Badge>}
+                      {m.budget && <Badge color="var(--c-accent)">{m.budget.name}</Badge>}
                       {m.source === 'MERCADO_PAGO' && <Badge color="#00AAFF">MP</Badge>}
                     </div>
                   </div>
@@ -196,6 +200,7 @@ export function Movimientos() {
         saving={saving}
         categories={categories ?? []}
         accounts={accounts ?? []}
+        projects={projects}
         onClose={() => setOpen(false)}
         onSubmit={save}
       />
@@ -203,7 +208,7 @@ export function Movimientos() {
   )
 }
 
-function MovementModal({ open, editing, saving, categories, accounts, onClose, onSubmit }: any) {
+function MovementModal({ open, editing, saving, categories, accounts, projects, onClose, onSubmit }: any) {
   const [type, setType] = useState(editing?.type ?? 'EXPENSE')
 
   return (
@@ -248,6 +253,13 @@ function MovementModal({ open, editing, saving, categories, accounts, onClose, o
           <p className="text-[11.5px] text-txt-3 -mt-1 mb-2">
             Mover plata entre tus cuentas no cambia tu patrimonio: sale de una y entra en la otra.
           </p>
+        )}
+
+        {projects.length > 0 && (
+          <Select name="budgetId" label="Presupuesto de proyecto (opcional)" defaultValue={editing?.budgetId ?? ''}>
+            <option value="">Sin asignar</option>
+            {projects.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </Select>
         )}
 
         <div className="flex gap-3 mt-5">

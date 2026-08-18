@@ -1,3 +1,4 @@
+import { Wallet, DollarSign, TrendingUp, CreditCard, Clock } from 'lucide-react'
 import { money } from '@/lib/format'
 import { Card } from './Card'
 
@@ -27,17 +28,37 @@ const ACCENT_VAR: Record<Accent, string> = {
   neutral: 'var(--c-txt)',
 }
 
+// Un ícono por acento — así cada tarjeta se reconoce de un vistazo, como en el Figma.
+const ACCENT_ICON: Record<Accent, typeof Wallet | null> = {
+  green: Wallet,
+  blue: DollarSign,
+  violet: TrendingUp,
+  danger: CreditCard,
+  warning: Clock,
+  neutral: null,
+}
+
 export function WealthCard({ label, value, sub, hero, suffix, tone = 'neutral', currency = 'ARS', accent = 'neutral' }: Props) {
   const negative = value < 0
   const color = ACCENT_VAR[accent]
+  const Icon = ACCENT_ICON[accent]
   // El número toma el color del acento, salvo que tone='auto' mande (verde/rojo por signo).
   const valueColor = tone === 'auto' ? undefined : accent !== 'neutral' ? color : undefined
 
   return (
     <Card highlight={hero}>
       <div className="flex flex-col items-center text-center justify-center h-full py-1">
+        {Icon && (
+          <span
+            className="w-8 h-8 rounded-full grid place-items-center mb-2"
+            style={{ background: color + '1f', color }}
+            aria-hidden="true"
+          >
+            <Icon size={16} strokeWidth={2} />
+          </span>
+        )}
         <div className="flex items-center gap-1.5 mb-2">
-          {accent !== 'neutral' && (
+          {accent !== 'neutral' && !Icon && (
             <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} aria-hidden="true" />
           )}
           <div className="text-[11px] font-semibold uppercase tracking-wider text-txt-3 leading-tight">{label}</div>

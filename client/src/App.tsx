@@ -21,14 +21,28 @@ import { Forecast } from '@/pages/Forecast'
 import { Insights } from '@/pages/Insights'
 import { Configuracion } from '@/pages/Configuracion'
 import { Onboarding } from '@/pages/Onboarding'
-import { Login } from '@/pages/Login'
-import { Register } from '@/pages/Register'
 import { Spinner } from '@/components/ui'
 
+// App local de un solo usuario: no hay pantalla de login. Si `checkAuth` no logra
+// resolver/crear el usuario dueño de esta instalación (ej. el servidor local no
+// responde), no tiene sentido mandar a una ruta de login que ya no existe — se muestra
+// un estado de error con reintentar, acá mismo.
+function ConnectionError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-bg text-center px-6">
+      <p className="text-txt font-semibold">No se pudo conectar con Finance OS</p>
+      <p className="text-txt-3 text-sm max-w-sm">Revisá que el servidor local esté corriendo e intentá de nuevo.</p>
+      <button onClick={onRetry} className="mt-1 px-4 py-2 rounded-btn bg-accent text-black font-semibold text-sm">
+        Reintentar
+      </button>
+    </div>
+  )
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useStore()
+  const { user, loading, checkAuth } = useStore()
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Spinner /></div>
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) return <ConnectionError onRetry={checkAuth} />
   // Never ran the welcome wizard → send them there rather than to an empty dashboard
   // with no accounts, no movements and nothing to explain what to do next.
   if (!user.onboardedAt) return <Navigate to="/bienvenida" replace />
@@ -36,9 +50,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function OnboardingRoute() {
-  const { user, loading } = useStore()
+  const { user, loading, checkAuth } = useStore()
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Spinner /></div>
-  if (!user) return <Navigate to="/login" replace />
+  if (!user) return <ConnectionError onRetry={checkAuth} />
   // Already onboarded: no reason to see the wizard again.
   if (user.onboardedAt) return <Navigate to="/" replace />
   return <Onboarding />
@@ -53,8 +67,6 @@ export function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
       <Route path="/bienvenida" element={<OnboardingRoute />} />
       <Route element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />

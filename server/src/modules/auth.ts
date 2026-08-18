@@ -70,6 +70,53 @@ async function seedDefaults(userId: string) {
   await applySeedRules(userId);
 }
 
+// Finance OS es local: un usuario por máquina, sin contraseña. Esta ruta reemplaza al
+// login en la UI — la app la llama sola al arrancar. No requiere auth previa.
+//
+// El "dueño local" no es simplemente "el primer usuario": si en algún momento se
+// registró más de uno en esta base (dos registros, una cuenta de prueba vieja…), el que
+// importa es el que tiene datos reales. Por eso se elige por cantidad de movimientos, no
+// por fecha de creación — así nunca se le muestra al usuario una cuenta vacía mientras
+// sus movimientos reales quedan invisibles colgados de otro userId.
+authRouter.post(
+  "/local",
+  ah(async (_req, res) => {
+    const users = await prisma.user.findMany({
+      orderBy: { createdAt: "asc" },
+      include: { _count: { select: { movements: true } } },
+    });
+
+    let owner = users[0];
+    for (const u of users) {
+      if (u._count.movements > (owner?._count.movements ?? -1)) owner = u;
+    }
+
+    if (!owner) {
+      owner = await prisma.user.create({
+        data: {
+          email: "local@financeos.app",
+          name: "Vos",
+          passwordHash: await hashPassword(crypto.randomBytes(24).toString("hex")),
+        },
+        include: { _count: { select: { movements: true } } },
+      });
+      await seedDefaults(owner.id);
+    }
+
+    await issueRefresh(owner.id, res);
+    res.json({
+      accessToken: signAccessToken(owner.id),
+      user: {
+        id: owner.id,
+        email: owner.email,
+        name: owner.name,
+        currency: owner.currency,
+        onboardedAt: owner.onboardedAt,
+      },
+    });
+  })
+);
+
 // FIX S1: authLimiter on register too (prevent mass account creation)
 authRouter.post(
   "/register",
