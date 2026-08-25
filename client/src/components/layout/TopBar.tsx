@@ -15,9 +15,9 @@ export function TopBar({ title, sub }: Props) {
       // el encabezado se ve torcido. En el resto de las plataformas manda el padding normal.
       style={mac ? { paddingTop: MAC_INSET + 16 } : undefined}
     >
-      <div className="flex items-center gap-4 bg-panel rounded-card px-6 py-4">
+      <div className="flex items-center gap-4 bg-panel rounded-card px-7 py-5">
         <div>
-          <h1 className="text-[19px] font-bold tracking-tight">{title}</h1>
+          <h1 className="text-h1 tracking-tight">{title}</h1>
           {sub && <p className="text-[12.5px] text-txt-3 mt-0.5">{sub}</p>}
         </div>
         {/* El hueco del medio es la zona de arrastre: sin barra de título, es lo único

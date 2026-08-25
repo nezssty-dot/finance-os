@@ -107,7 +107,7 @@ export function Auditoria() {
                   key={i}
                   className="flex items-start gap-3 px-4 py-3 rounded-[11px] border"
                   style={{
-                    borderColor: f.severity === 'warning' ? 'rgba(212,165,58,.32)' : 'var(--line, #242428)',
+                    borderColor: f.severity === 'warning' ? 'rgba(212,165,58,.32)' : 'var(--c-line)',
                     background: f.severity === 'warning' ? 'rgba(212,165,58,.06)' : 'transparent',
                   }}
                 >

@@ -37,7 +37,7 @@ export function HealthCard({ health }: { health: Health }) {
         <div className="flex items-center gap-5">
           <div className="relative w-[128px] h-[128px] shrink-0">
             <svg viewBox="0 0 128 128" className="w-full h-full -rotate-90">
-              <circle cx="64" cy="64" r="52" fill="none" stroke="var(--line)" strokeWidth="10" />
+              <circle cx="64" cy="64" r="52" fill="none" stroke="var(--c-line)" strokeWidth="10" />
               <circle
                 cx="64"
                 cy="64"

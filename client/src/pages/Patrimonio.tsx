@@ -142,13 +142,13 @@ export function Patrimonio() {
             <h3 className="text-sm font-semibold mb-3">Balance mensual {year}</h3>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={chartData}>
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6a6a74' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#6a6a74' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${(v / 1e6).toFixed(1)}M`} width={42} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--c-txt-3)' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: 'var(--c-txt-3)' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${(v / 1e6).toFixed(1)}M`} width={42} />
                 <Tooltip
-                  cursor={{ fill: 'rgba(212,165,58,0.08)' }}
-                  contentStyle={{ background: '#131316', border: '1px solid #242428', borderRadius: 10, fontSize: 13 }}
-                  labelStyle={{ color: '#ededed', fontWeight: 600, marginBottom: 2 }}
-                  itemStyle={{ color: '#ededed' }}
+                  cursor={{ fill: 'rgba(26,255,121,0.08)' }}
+                  contentStyle={{ background: 'var(--c-panel)', border: '1px solid var(--c-line)', borderRadius: 10, fontSize: 13 }}
+                  labelStyle={{ color: 'var(--c-txt)', fontWeight: 600, marginBottom: 2 }}
+                  itemStyle={{ color: 'var(--c-txt)' }}
                   formatter={(v: number) => [ARS(v), 'Balance']}
                 />
                 <Bar dataKey="balance" radius={[4, 4, 0, 0]}>

@@ -27,10 +27,22 @@ export default {
         info: { DEFAULT: 'var(--c-info)', dim: 'var(--c-info-dim)' },
         violet: { DEFAULT: 'var(--c-violet)', dim: 'var(--c-violet-dim)' },
         track: 'var(--c-track)',
+        // Riel del sidebar: siempre negro, no cambia con el tema (ver index.css).
+        chrome: { DEFAULT: 'var(--c-chrome)', 2: 'var(--c-chrome-2)' },
+        'chrome-txt': { DEFAULT: 'var(--c-chrome-txt)', 2: 'var(--c-chrome-txt-2)' },
       },
       fontFamily: {
         sans: ['Poppins', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'system-ui', 'sans-serif'],
         mono: ['SF Mono', 'Cascadia Code', 'Consolas', 'ui-monospace', 'monospace'],
+      },
+      // Escala tipográfica del sistema de diseño de Figma (swatch "Poppin"), Hero→Caption.
+      fontSize: {
+        hero: ['40px', { lineHeight: '1.1', fontWeight: '700', letterSpacing: '-0.01em' }],
+        h1: ['30px', { lineHeight: '1.2', fontWeight: '600' }],
+        h3: ['24px', { lineHeight: '1.25', fontWeight: '600' }],
+        h4: ['20px', { lineHeight: '1.3', fontWeight: '500' }],
+        title: ['16px', { lineHeight: '1.4', fontWeight: '600' }],
+        caption: ['10px', { lineHeight: '1.4', fontWeight: '700', letterSpacing: '0.06em' }],
       },
       borderRadius: { card: '26px', btn: '999px' },
       animation: { 'fade-in': 'fadeIn .22s ease', 'spin-slow': 'spin .8s linear infinite' },

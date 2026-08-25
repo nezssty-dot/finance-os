@@ -1,10 +1,11 @@
 import { useState } from 'react'
+import { Landmark, Wallet, Smartphone, PiggyBank, TrendingUp, CreditCard, Pencil, Trash2 } from 'lucide-react'
 import { useFetch, useMutate } from '@/hooks/useFetch'
 import { useToast } from '@/lib/toast'
 import { api } from '@/lib/api'
 import { money } from '@/lib/format'
 import { TopBar } from '@/components/layout/TopBar'
-import { Card, WealthCard, Button, Modal, Input, Select, Badge, EmptyState, SkeletonRows } from '@/components/ui'
+import { Card, WealthCard, Button, Modal, Input, Select, EmptyState, SkeletonRows } from '@/components/ui'
 
 const TYPES = [
   { v: 'MERCADO_PAGO', label: 'Mercado Pago' },
@@ -16,6 +17,12 @@ const TYPES = [
   { v: 'OTHER', label: 'Otra' },
 ]
 const LABEL: Record<string, string> = Object.fromEntries(TYPES.map((t) => [t.v, t.label]))
+// Un ícono genérico por tipo — nada de logos de marcas ajenas (VISA, Mastercard…):
+// estas son las cuentas del usuario, no tarjetas de un banco.
+const ICON: Record<string, typeof Wallet> = {
+  CASH: Wallet, BANK: Landmark, MERCADO_PAGO: Smartphone,
+  RESERVE: PiggyBank, WALLET: Wallet, BROKER: TrendingUp, OTHER: CreditCard,
+}
 
 export function Cuentas() {
   const toast = useToast()
@@ -103,43 +110,48 @@ export function Cuentas() {
           <Button onClick={() => setTransfer(true)} disabled={(accounts?.length ?? 0) < 2}>Transferir entre cuentas</Button>
         </div>
 
-        <Card>
-          {loading && !accounts ? (
-            <SkeletonRows rows={4} />
-          ) : !accounts?.length ? (
+        {loading && !accounts ? (
+          <Card><SkeletonRows rows={4} /></Card>
+        ) : !accounts?.length ? (
+          <Card>
             <EmptyState
               icon="🏦"
               title="Todavía no tenés cuentas"
               description="Creá tu primera cuenta para empezar a seguir tu plata."
               action={<Button variant="primary" onClick={() => setOpen(true)}>+ Nueva cuenta</Button>}
             />
-          ) : (
-            accounts.map((a) => (
-              <div key={a.id} className="flex items-center gap-3 py-3 border-b border-bg-2 last:border-0 group">
-                <div className="w-9 h-9 rounded-[9px] bg-panel-2 flex items-center justify-center text-gold-2 font-bold text-xs shrink-0">
-                  {a.name[0].toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-[13.5px]">{a.name}</span>
-                    <Badge>{LABEL[a.type] ?? a.type}</Badge>
+          </Card>
+        ) : (
+          <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
+            {accounts.map((a, i) => {
+              const Icon = ICON[a.type] ?? CreditCard
+              const dark = i % 2 === 1
+              return (
+                <Card key={a.id} className={`group relative !p-0 overflow-hidden ${dark ? '!bg-chrome text-white' : ''}`}>
+                  <div className="p-5">
+                    <div className="flex items-start justify-between mb-4">
+                      <span className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${dark ? 'bg-white/10' : 'bg-panel-2'}`}>
+                        <Icon size={18} strokeWidth={2} className={dark ? 'text-white' : 'text-txt-2'} />
+                      </span>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => { setEditing(a); setOpen(true) }} className={`p-1.5 rounded-full ${dark ? 'text-white/60 hover:text-white hover:bg-white/10' : 'text-txt-3 hover:text-txt hover:bg-panel-2'}`}>
+                          <Pencil size={13} />
+                        </button>
+                        <button onClick={() => remove(a)} className={`p-1.5 rounded-full ${dark ? 'text-white/60 hover:text-danger hover:bg-white/10' : 'text-txt-3 hover:text-danger hover:bg-panel-2'}`}>
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="font-semibold text-title truncate">{a.name}</div>
+                    <div className={`text-[11.5px] mt-0.5 ${dark ? 'text-white/50' : 'text-txt-3'}`}>{LABEL[a.type] ?? a.type} · {a.movements} mov.</div>
+                    <div className={`font-mono font-bold text-h3 tabular-nums mt-4 ${a.balance < 0 ? 'text-danger' : ''}`}>{money(a.balance, a.currency)}</div>
+                    <div className={`text-[11px] mt-0.5 ${dark ? 'text-white/40' : 'text-txt-3'}`}>{a.currency} · inicial {money(a.openingBalance, a.currency)}</div>
                   </div>
-                  <div className="text-[11px] text-txt-3 mt-0.5">
-                    {a.movements} movimientos · inicial {money(a.openingBalance, a.currency)}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className={`font-mono font-bold text-[15px] ${a.balance < 0 ? "text-danger" : ""}`}>{money(a.balance, a.currency)}</div>
-                  <div className="text-[10.5px] text-txt-3">{a.currency}</div>
-                </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => { setEditing(a); setOpen(true) }} className="text-txt-3 hover:text-gold-2 text-xs px-1.5 py-1">Editar</button>
-                  <button onClick={() => remove(a)} className="text-txt-3 hover:text-danger text-xs px-1.5 py-1">Borrar</button>
-                </div>
-              </div>
-            ))
-          )}
-        </Card>
+                </Card>
+              )
+            })}
+          </div>
+        )}
 
         <p className="text-[11.5px] text-txt-3 mt-3">
           El saldo de cada cuenta es el saldo inicial más todo lo que entró y salió. No hay nada que actualizar a mano.

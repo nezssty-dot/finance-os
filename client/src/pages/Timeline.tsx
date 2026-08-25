@@ -48,7 +48,7 @@ export function Timeline() {
         {future.length > 0 && (
           <Card title="Próximamente">
             <div className="relative pl-6">
-              <div className="absolute left-[7px] top-2 bottom-2 w-px bg-line border-dashed" style={{ borderLeft: '1px dashed var(--line)' }} />
+              <div className="absolute left-[7px] top-2 bottom-2 w-px bg-line border-dashed" style={{ borderLeft: '1px dashed var(--c-line)' }} />
               {future.map((ev: any) => (
                 <div key={ev.id} className="relative pb-4 last:pb-0">
                   <div

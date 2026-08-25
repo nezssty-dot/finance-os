@@ -60,15 +60,15 @@ export function Sidebar() {
           otro eje a comportarse como 'auto' también (aunque diga overflow-x-visible), así
           que un scroll acá recortaría el tooltip que se abre hacia afuera con left-full.
           Por eso los íconos van compactos: para que 19 entren sin necesitar scroll. */}
-      <div className="flex-1 min-h-0 bg-panel rounded-card flex flex-col items-center py-4 gap-0.5">
-        <div className="w-10 h-10 rounded-full bg-[#0f1420] flex items-center justify-center shrink-0 mb-3 shadow-lg shadow-[#3d7bfc]/20">
+      <div className="flex-1 min-h-0 bg-chrome rounded-card flex flex-col items-center py-4 gap-0.5">
+        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0 mb-3">
           <FinanceLogo size={22} />
         </div>
 
         <nav className="flex flex-col items-center gap-0.5 flex-1">
           {NAV.map((section, si) => (
             <div key={si} className="flex flex-col items-center gap-0.5">
-              {section.group && <div className="w-6 h-px bg-line my-1.5" />}
+              {section.group && <div className="w-6 h-px bg-white/10 my-1.5" />}
               {section.items.map((n) => (
                 <NavLink
                   key={n.to}
@@ -76,12 +76,12 @@ export function Sidebar() {
                   end={n.to === '/'}
                   className={({ isActive }) =>
                     `group relative w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                      isActive ? 'bg-accent text-black' : 'text-txt-2 hover:text-txt hover:bg-panel-2'
+                      isActive ? 'bg-accent text-black' : 'text-chrome-txt-2 hover:text-chrome-txt hover:bg-chrome-2'
                     }`
                   }
                 >
                   <n.Icon size={16} strokeWidth={2} />
-                  <span className="pointer-events-none absolute left-full ml-3 px-2.5 py-1 rounded-md bg-panel-2 text-txt text-[12px] font-medium whitespace-nowrap opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150 z-50">
+                  <span className="pointer-events-none absolute left-full ml-3 px-2.5 py-1 rounded-md bg-chrome-2 text-chrome-txt text-[12px] font-medium whitespace-nowrap opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150 z-50">
                     {n.label}
                   </span>
                 </NavLink>
@@ -91,7 +91,7 @@ export function Sidebar() {
         </nav>
 
         <div
-          className="w-8 h-8 rounded-full bg-panel-2 flex items-center justify-center font-bold text-gold-2 text-xs shrink-0 mt-2"
+          className="w-8 h-8 rounded-full bg-chrome-2 flex items-center justify-center font-bold text-accent text-xs shrink-0 mt-2"
           title={user?.name}
         >
           {user?.name?.[0]?.toUpperCase() || '?'}

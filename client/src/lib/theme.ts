@@ -7,9 +7,9 @@ export type Theme = 'dark' | 'light';
 
 const STORAGE_KEY = 'fos-theme';
 
-/** Normaliza cualquier valor guardado a un tema válido. Ante la duda, oscuro (el default). */
+/** Normaliza cualquier valor guardado a un tema válido. Ante la duda, claro (el default). */
 export function resolveTheme(stored: string | null | undefined): Theme {
-  return stored === 'light' ? 'light' : 'dark';
+  return stored === 'dark' ? 'dark' : 'light';
 }
 
 /** El tema opuesto, para el toggle. */
@@ -22,7 +22,7 @@ export function getStoredTheme(): Theme {
   try {
     return resolveTheme(localStorage.getItem(STORAGE_KEY));
   } catch {
-    return 'dark';
+    return 'light';
   }
 }
 

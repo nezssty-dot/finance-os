@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es-AR" data-theme="dark">
+<html lang="es-AR" data-theme="light">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -11,9 +11,9 @@
     // Aplica el tema guardado antes de pintar, para que no haya un flash del tema equivocado.
     (function () {
       try {
-        var t = localStorage.getItem('fos-theme') || 'dark';
+        var t = localStorage.getItem('fos-theme') || 'light';
         document.documentElement.setAttribute('data-theme', t);
-      } catch (e) { document.documentElement.setAttribute('data-theme', 'dark'); }
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
     })();
   </script>
 </head>

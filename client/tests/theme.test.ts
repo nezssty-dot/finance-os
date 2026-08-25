@@ -17,8 +17,8 @@ console.log("\n\u2500\u2500\u2500 Tema \u2500\u2500\u2500\n");
 
 test("'light' se resuelve a light", () => eq(resolveTheme("light"), "light", "tema"));
 test("'dark' se resuelve a dark", () => eq(resolveTheme("dark"), "dark", "tema"));
-test("null cae en el default oscuro", () => eq(resolveTheme(null), "dark", "default"));
-test("un valor basura cae en oscuro", () => eq(resolveTheme("azul"), "dark", "default"));
+test("null cae en el default claro", () => eq(resolveTheme(null), "light", "default"));
+test("un valor basura cae en claro", () => eq(resolveTheme("azul"), "light", "default"));
 test("toggle de dark da light", () => eq(toggleTheme("dark"), "light", "toggle"));
 test("toggle de light da dark", () => eq(toggleTheme("light"), "dark", "toggle"));
 

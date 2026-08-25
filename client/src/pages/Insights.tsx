@@ -13,14 +13,14 @@ const SEVERITY: Record<string, { color: string; bg: string; label: string; icon:
 }
 
 const tooltipStyle = {
-  background: '#131316',
-  border: '1px solid #242428',
+  background: 'var(--c-panel)',
+  border: '1px solid var(--c-line)',
   borderRadius: 10,
   fontSize: 13,
 }
-const tipLabel = { color: '#ededed', fontWeight: 600, marginBottom: 2 }
-const tipItem = { color: '#ededed' }
-const barCursor = { fill: 'rgba(212,165,58,0.08)' }
+const tipLabel = { color: 'var(--c-txt)', fontWeight: 600, marginBottom: 2 }
+const tipItem = { color: 'var(--c-txt)' }
+const barCursor = { fill: 'rgba(26,255,121,0.08)' }
 
 interface Reco { text: string; tone: 'good' | 'warn' | 'tip'; priority: number }
 
