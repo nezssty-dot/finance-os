@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+import { LineChart as LineChartIcon } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { useFetch } from '@/hooks/useFetch'
 import { ARS } from '@/lib/format'
@@ -70,7 +72,11 @@ export function Insights() {
 
   return (
     <>
-      <TopBar title="Insights" sub={`Análisis de tus números reales de ${year}`} />
+      <TopBar title="Insights" sub={`Análisis de tus números reales de ${year}`}>
+        <Link to="/forecast" className="flex items-center gap-1.5 text-[13px] text-txt-2 hover:text-txt px-3 py-2 rounded-btn hover:bg-panel-2 transition-colors">
+          <LineChartIcon size={15} /> Forecast
+        </Link>
+      </TopBar>
       <div className="p-7 animate-fade-in">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
           <WealthCard label="Patrimonio neto" value={patrimonio.neto} hero />

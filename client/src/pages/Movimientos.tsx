@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Activity, Upload } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { useFetch, useMutate } from '@/hooks/useFetch'
 import { useToast } from '@/lib/toast'
@@ -103,7 +105,14 @@ export function Movimientos() {
 
   return (
     <>
-      <TopBar title="Movimientos" sub={data ? `${data.total} en ${year}` : undefined} />
+      <TopBar title="Movimientos" sub={data ? `${data.total} en ${year}` : undefined}>
+        <Link to="/timeline" className="hidden sm:flex items-center gap-1.5 text-[13px] text-txt-2 hover:text-txt px-3 py-2 rounded-btn hover:bg-panel-2 transition-colors">
+          <Activity size={15} /> Timeline
+        </Link>
+        <Link to="/importar" className="hidden sm:flex items-center gap-1.5 text-[13px] text-txt-2 hover:text-txt px-3 py-2 rounded-btn hover:bg-panel-2 transition-colors">
+          <Upload size={15} /> Importar
+        </Link>
+      </TopBar>
       <div className="p-7 animate-fade-in">
         <div className="flex flex-wrap gap-2 mb-4 items-center">
           <input

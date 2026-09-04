@@ -185,5 +185,15 @@ nsis:
   createStartMenuShortcut: true
   shortcutName: Finance OS
   artifactName: ${productName} Setup.${ext}
+  # GUID fijo del instalador (no cambia entre versiones). Windows lo usa para saber
+  # "esto es una actualización de Finance OS", no una app nueva — así el instalador
+  # borra la versión vieja solo antes de poner la nueva, y nunca quedan dos accesos
+  # directos ni dos entradas en "Agregar o quitar programas". Sin esto, electron-builder
+  # lo deriva de `appId`, que también es estable — este valor es un cinturón y tiradores
+  # explícito, para que nunca dependa de un cálculo implícito.
+  #
+  # NUNCA cambiar este valor entre versiones — cambiarlo es exactamente lo que produce
+  # el bug que esto evita (Windows lo trataría como una app distinta).
+  guid: A80AF806-EC6F-4573-A729-F5C4AF2B9239
 
 publish: null

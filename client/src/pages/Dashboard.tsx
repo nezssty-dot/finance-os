@@ -147,8 +147,10 @@ export function Dashboard() {
           )
         })()}
 
-        {/* ── Fila 1: Balance Total | Evolución de Ahorro | Tus Cuentas ── */}
-        <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 1fr 380px' }}>
+        {/* ── Fila 1: Balance Total | Evolución de Ahorro | Tus Cuentas ──
+            Apilado en ventana angosta, 2 columnas a partir de md, las 3 juntas recién
+            en xl — así se ve bien tanto en una mitad de pantalla como maximizada. */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1fr_1fr_380px] gap-4">
           <div className="rounded-card p-6 flex flex-col justify-between" style={{ background: 'var(--c-accent)' }}>
             <div className="flex items-start justify-between">
               <div>
@@ -241,7 +243,7 @@ export function Dashboard() {
         </div>
 
         {/* ── Fila 2: Ingreso | Egreso | Cotización  +  Análisis IA ── */}
-        <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 1fr 1fr 380px' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_380px] gap-4">
           <Card className="flex flex-col justify-between gap-4">
             <div className="flex items-start gap-4">
               <span className="w-11 h-11 rounded-full bg-success-dim text-success flex items-center justify-center shrink-0">
@@ -307,7 +309,7 @@ export function Dashboard() {
         </div>
 
         {/* ── Fila 3: Últimos movimientos  +  Categorías ── */}
-        <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 380px' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-4">
           <Card>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-title">Últimos Movimientos</h3>

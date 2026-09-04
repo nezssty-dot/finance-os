@@ -3,6 +3,52 @@
 @tailwind utilities;
 
 /*
+ * ─── POPPINS, AUTOALOJADA ───
+ * Antes se cargaba desde Google Fonts (fonts.googleapis.com). En la app empaquetada
+ * eso depende de que Windows/Mac tengan internet ANDANDO en el primer render — si
+ * falla (firewall, sin wifi, DNS lento), el navegador cae en la fuente del sistema
+ * (Segoe UI en Windows) sin avisar, y la app se ve distinta a como se la mostré acá.
+ * Los .woff2 viven en client/public/fonts/ y salen con el build: nunca dependen de
+ * la red. Solo el subset "latin" (cubre á é í ó ú ñ ü ¿ ¡ — todo lo que hace falta
+ * para castellano) para no pesar de más.
+ */
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/poppins-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/poppins-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/poppins-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/poppins-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/poppins-800.woff2') format('woff2');
+}
+
+/*
  * ─── SISTEMA DE TEMAS — estética "Free Finance Dashboard UI" (Figma) ───
  * Arranca en CLARO — así están armadas todas las pantallas de referencia del Figma
  * (Dashboard, Patrimonio, Cuentas, Servicios, Meses, Movimientos). El usuario puede

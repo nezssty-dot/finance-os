@@ -1,4 +1,6 @@
 import { useState, useRef } from 'react'
+import { Link } from 'react-router-dom'
+import { Tag, ShieldCheck } from 'lucide-react'
 import { getStoredTheme, applyTheme, type Theme } from '@/lib/theme'
 import { useStore } from '@/lib/store'
 import { useFetch, useMutate } from '@/hooks/useFetch'
@@ -123,7 +125,14 @@ export function Configuracion() {
 
   return (
     <>
-      <TopBar title="Configuración" sub={user?.email} />
+      <TopBar title="Configuración" sub={user?.email}>
+        <Link to="/categorias" className="flex items-center gap-1.5 text-[13px] text-txt-2 hover:text-txt px-3 py-2 rounded-btn hover:bg-panel-2 transition-colors">
+          <Tag size={15} /> Categorías
+        </Link>
+        <Link to="/auditoria" className="flex items-center gap-1.5 text-[13px] text-txt-2 hover:text-txt px-3 py-2 rounded-btn hover:bg-panel-2 transition-colors">
+          <ShieldCheck size={15} /> Auditoría
+        </Link>
+      </TopBar>
       <div className="p-7 animate-fade-in max-w-3xl">
         <div className="grid gap-4">
           <Card title="Apariencia">
