@@ -24,6 +24,9 @@ export const Button = forwardRef<HTMLButtonElement, Props>(
       disabled={disabled || loading}
       className={clsx(
         'inline-flex items-center gap-2 px-4 py-2.5 rounded-btn text-[13.5px] font-semibold transition-all duration-150',
+        // active:scale-95 es CSS puro — el mismo "se hunde" al clic en Windows y Mac,
+        // sin animación de JS de por medio.
+        'active:scale-95 disabled:active:scale-100',
         'disabled:opacity-50 disabled:cursor-default',
         styles[variant],
         className,
