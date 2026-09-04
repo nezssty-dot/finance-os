@@ -50,19 +50,21 @@
 
 /*
  * ─── SISTEMA DE TEMAS — estética "Free Finance Dashboard UI" (Figma) ───
- * Estos valores salen de la página "Components" del Figma (nodo 4:2129 → frames
- * "Colors" y "Typo"), no a ojo: son los hex tal cual están nombrados ahí.
+ * Estos valores salen de los átomos reales del Figma (nodo 4:2129 "Components":
+ * frames Colors/Typo, más los componentes Status y Btn ya armados con esos mismos
+ * colores) — no a ojo, son los hex tal cual los usa el propio archivo:
  *
  *   Primary/Black #000000 · Primary/Green #00FF6B · Primary/Grey 1 #B6B6B6
  *   Primary/Grey 2 #F4F4F4 · Primary/BG #F3F4F7 · Primary/White #FFFFFF
- *   Success S700 #00B771 / S10 #CCFFCD · Warning W700 #B39304 / W10 #FEFACD
- *   Info I600 #3348D0 / I10 #DAE1FE · Danger D600 #DB413E / D10 #FFEBDD
+ *   Chip "Paid"/"Up":     texto Success/S700 #00B771 · fondo Success/S10 #CCFFCD
+ *   Chip "Pending":       texto Warning/W600 #D6B306 · fondo Warning/W10 #FEFACD
+ *   Chip "Overdue"/"Down": texto Danger/D500 #FF6756  · fondo Danger/D10  #FFEBDD
+ *   Info I600 #3348D0 / I10 #DAE1FE (no hay un chip de "info" armado en el Figma;
+ *   se mantiene el mismo criterio de la rampa para el uso que ya tenía la app)
  *
- * (900→10 en cada rampa es "más oscuro → más claro"; se usa el tono ~700 para
- * texto/ícono —con contraste sobre blanco— y el 10, el más pálido, como fondo del
- * chip. El oscuro ya estaba verificado contra el frame "Dashboard - Darkmode" en una
+ * El oscuro ya estaba verificado contra el frame "Dashboard - Darkmode" en una
  * pasada anterior — acá solo se corrige el verde de acento, que en esa pasada había
- * quedado en un verde parecido pero no el de la marca real.)
+ * quedado en un verde parecido pero no el de la marca real.
  *
  * Arranca en CLARO — así están armadas todas las pantallas de referencia del Figma
  * (Dashboard, Patrimonio, Cuentas, Servicios, Meses, Movimientos). El usuario puede
@@ -84,8 +86,8 @@
   --c-txt: #000000; --c-txt-2: #b6b6b6; --c-txt-3: #9a9a9a;
 
   --c-success: #00b771; --c-success-dim: #ccffcd;
-  --c-danger: #db413e; --c-danger-dim: #ffebdd;
-  --c-warning: #b39304; --c-warning-dim: #fefacd;
+  --c-danger: #ff6756; --c-danger-dim: #ffebdd;
+  --c-warning: #d6b306; --c-warning-dim: #fefacd;
   --c-info: #3348d0; --c-info-dim: #dae1fe;
   --c-violet: #7c5cfc; --c-violet-dim: rgba(124,92,252,.12);
 }

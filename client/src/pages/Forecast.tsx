@@ -22,7 +22,7 @@ export function Forecast() {
           <WealthCard label="Ahorro promedio" value={data.averages.saving} sub="Mensual" />
         </div>
         <Card className="mb-4">
-          <h3 className="text-sm font-semibold mb-3">Mes a mes</h3>
+          <h3 className="text-title mb-3">Mes a mes</h3>
           {data.forecast.map((f: any) => (
             <div key={f.month} className="flex items-center gap-3 py-2 border-b border-bg-2 last:border-0">
               <span className="text-sm text-txt-2 w-8">{MONTHS_SHORT[f.month]}</span>
@@ -34,7 +34,7 @@ export function Forecast() {
           ))}
         </Card>
         <Card highlight>
-          <h3 className="text-sm font-semibold text-gold-2 mb-4">Proyección a fin de año</h3>
+          <h3 className="text-title text-gold-2 mb-4">Proyección a fin de año</h3>
           <div className="space-y-3">
             <div className="flex justify-between"><span className="text-txt-2">Ahorro acumulado</span><span className="font-mono font-bold text-success">{ARS(data.projections.yearEndSaving)}</span></div>
             <div className="flex justify-between"><span className="text-txt-2">Patrimonio actual</span><span className="font-mono font-bold">{ARS(data.projections.currentPatrimonio)}</span></div>

@@ -87,7 +87,7 @@ function MesDetalle({ month, year, onBack }: { month: number; year: number; onBa
         </div>
         <div className="grid md:grid-cols-2 gap-4">
           <Card>
-            <h3 className="text-sm font-semibold mb-4">Categorías</h3>
+            <h3 className="text-title mb-4">Categorías</h3>
             <div className="flex items-center gap-5 mb-5">
               <Gauge pct={p} size={100} stroke={11} color={healthHex(p, true)} />
               <div>
@@ -103,7 +103,7 @@ function MesDetalle({ month, year, onBack }: { month: number; year: number; onBa
             </div>
           </Card>
           <Card>
-            <h3 className="text-sm font-semibold mb-3">Movimientos ({movs.length})</h3>
+            <h3 className="text-title mb-3">Movimientos ({movs.length})</h3>
             <div className="max-h-[500px] overflow-y-auto">
               {movsOrdenados.map((m: any) => <MovementRow key={m.id} m={m} />)}
               {!movs.length && <EmptyState icon="📝" title="Sin movimientos" />}

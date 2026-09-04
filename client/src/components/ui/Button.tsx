@@ -9,12 +9,16 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: React.ReactNode
 }
 
-// Pills sólidas, sin borde — así se ven los botones en el kit de Figma (fondo plano,
-// nunca contorno).
+// Del componente "Btn" real del Figma (nodo 4:2411): Primary es la pill verde sólida
+// (#00FF6B, hover #00DB71 — el mismo "Success/S600" del sistema); Secondary es SIN
+// relleno, borde sólido, texto del mismo color que el borde — no gris relleno como
+// tenía antes. `border-txt text-txt` en vez de `border-black` a propósito: en oscuro
+// --c-txt es blanco, y el botón tiene que invertirse con el tema, no quedar siempre
+// negro sobre un fondo oscuro.
 const styles: Record<Variant, string> = {
-  primary: 'bg-gold text-black hover:bg-gold-2 font-semibold',
-  ghost: 'bg-panel-2 text-txt-2 hover:bg-line-2 hover:text-txt',
-  danger: 'bg-panel-2 text-danger hover:bg-danger/10',
+  primary: 'bg-gold text-black hover:bg-gold-2',
+  ghost: 'border border-txt text-txt bg-transparent hover:bg-txt/5',
+  danger: 'border border-danger text-danger bg-transparent hover:bg-danger/10',
 }
 
 export const Button = forwardRef<HTMLButtonElement, Props>(
@@ -23,7 +27,7 @@ export const Button = forwardRef<HTMLButtonElement, Props>(
       ref={ref}
       disabled={disabled || loading}
       className={clsx(
-        'inline-flex items-center gap-2 px-4 py-2.5 rounded-btn text-[13.5px] font-semibold transition-all duration-150',
+        'inline-flex items-center gap-2 px-4 py-2.5 rounded-btn text-[13.5px] transition-all duration-150',
         // active:scale-95 es CSS puro — el mismo "se hunde" al clic en Windows y Mac,
         // sin animación de JS de por medio.
         'active:scale-95 disabled:active:scale-100',

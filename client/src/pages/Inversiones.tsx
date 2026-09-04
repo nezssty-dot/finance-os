@@ -109,7 +109,7 @@ export function Inversiones() {
         </div>
         {breakdown.length > 0 && (
           <Card className="mb-4">
-            <h3 className="text-sm font-semibold mb-3">Distribución por tipo</h3>
+            <h3 className="text-title mb-3">Distribución por tipo</h3>
             <div className="space-y-2.5">
               {breakdown.map((b) => {
                 const color = TYPE_COLORS[b.type] ?? '#8a8a8a'
@@ -133,13 +133,13 @@ export function Inversiones() {
           </Card>
         )}
         <Card>
-          <h3 className="text-sm font-semibold mb-3">Mis inversiones</h3>
+          <h3 className="text-title mb-3">Mis inversiones</h3>
           {invs.length ? invs.map((i) => {
             const g = i.currentValue - i.capital
             const p = i.capital > 0 ? ((g / i.capital) * 100).toFixed(1) : '0'
             return (
               <div key={i.id} className="flex items-center gap-3 py-3 border-b border-bg-2 last:border-0">
-                <div className="w-9 h-9 rounded-[9px] bg-gold-dim text-gold-2 flex items-center justify-center text-[10px] font-bold shrink-0">{String(i.kind).slice(0, 3)}</div>
+                <div className="w-9 h-9 rounded-full bg-gold-dim text-gold-2 flex items-center justify-center text-[10px] font-bold shrink-0">{String(i.kind).slice(0, 3)}</div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-[13px] flex items-center gap-2">
                     {i.ticker ? `${i.ticker} · ${i.name}` : i.name}

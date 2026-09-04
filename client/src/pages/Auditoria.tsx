@@ -100,7 +100,7 @@ export function Auditoria() {
           </Card>
         ) : (
           <Card>
-            <h3 className="text-sm font-semibold mb-3">Qué revisar</h3>
+            <h3 className="text-title mb-3">Qué revisar</h3>
             <div className="space-y-2.5">
               {[...warnings, ...infos].map((f, i) => (
                 <div

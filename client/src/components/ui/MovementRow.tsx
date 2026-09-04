@@ -10,7 +10,7 @@ export function MovementRow({ m }: { m: Movement }) {
   const inc = m.type === 'INCOME'
   return (
     <div className="flex items-center gap-3 py-2.5 border-b border-bg-2 last:border-0 group hover:bg-panel-2/50 -mx-2 px-2 rounded-lg transition-colors">
-      <div className={`w-8 h-8 rounded-[9px] flex items-center justify-center font-bold text-sm shrink-0 ${inc ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`}>
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${inc ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`}>
         {inc ? '+' : '−'}
       </div>
       <div className="flex-1 min-w-0">

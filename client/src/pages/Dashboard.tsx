@@ -195,7 +195,9 @@ export function Dashboard() {
                   <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--c-txt-3)' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: 'var(--c-txt-3)' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${(v / 1e6).toFixed(1)}M`} width={42} />
                   <Tooltip cursor={{ stroke: 'var(--c-accent)', strokeWidth: 1, strokeOpacity: 0.3 }} contentStyle={{ background: 'var(--c-panel)', border: '1px solid var(--c-line)', borderRadius: 14, fontSize: 13 }} labelStyle={{ color: 'var(--c-txt)', fontWeight: 600, marginBottom: 2 }} itemStyle={{ color: 'var(--c-txt)' }} formatter={(v: number) => [ARS(v), 'Ahorro']} />
-                  <Area type="monotone" dataKey="ahorro" stroke="var(--c-accent-2)" strokeWidth={2.5} fill="url(#goldGrad)" dot={{ r: 3, fill: 'var(--c-accent-2)', stroke: 'var(--c-panel)', strokeWidth: 2 }} />
+                  {/* En el Figma la línea es negra (el color de texto) con el relleno
+                      verde debajo — no la línea verde que tenía antes. */}
+                  <Area type="monotone" dataKey="ahorro" stroke="var(--c-txt)" strokeWidth={2.5} fill="url(#goldGrad)" dot={{ r: 3, fill: 'var(--c-txt)', stroke: 'var(--c-panel)', strokeWidth: 2 }} />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (

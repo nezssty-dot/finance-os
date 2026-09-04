@@ -81,7 +81,7 @@ export function Patrimonio() {
 
         {arsAccounts.length > 0 && disponibleARS > 0 && (
           <Card className="mb-4">
-            <h3 className="text-sm font-semibold mb-3">Dónde está tu plata (cuentas en ARS)</h3>
+            <h3 className="text-title mb-3">Dónde está tu plata (cuentas en ARS)</h3>
             <div className="space-y-2.5">
               {arsAccounts.map((a: any) => {
                 const share = disponibleARS !== 0 ? (a.balance / disponibleARS) * 100 : 0
@@ -117,7 +117,7 @@ export function Patrimonio() {
 
         {cur.invertido > 0 && (
           <Card className="mb-4">
-            <h3 className="text-sm font-semibold mb-3">Cómo está invertido</h3>
+            <h3 className="text-title mb-3">Cómo está invertido</h3>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               {CLASSES.map((c) => {
                 const v = cur.breakdown[c.key] ?? 0
@@ -139,7 +139,7 @@ export function Patrimonio() {
 
         {chartData.length > 0 && (
           <Card className="mb-4">
-            <h3 className="text-sm font-semibold mb-3">Balance mensual {year}</h3>
+            <h3 className="text-title mb-3">Balance mensual {year}</h3>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={chartData}>
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--c-txt-3)' }} axisLine={false} tickLine={false} />
@@ -161,7 +161,7 @@ export function Patrimonio() {
 
         <div className="grid md:grid-cols-2 gap-4">
           <Card>
-            <h3 className="text-sm font-semibold mb-3">Cuentas</h3>
+            <h3 className="text-title mb-3">Cuentas</h3>
             {cur.accounts.length ? cur.accounts.map((a: any) => (
               <div key={a.id} className="flex items-center justify-between py-2.5 border-b border-bg-2 last:border-0">
                 <div className="flex items-center gap-2"><span className="font-semibold text-[13px]">{a.name}</span><Badge>{a.type}</Badge></div>
@@ -170,7 +170,7 @@ export function Patrimonio() {
             )) : <EmptyState icon="🏦" title="Sin cuentas" />}
           </Card>
           <Card>
-            <h3 className="text-sm font-semibold mb-3">Deudas y por cobrar</h3>
+            <h3 className="text-title mb-3">Deudas y por cobrar</h3>
             {cur.debts.length ? cur.debts.map((d: any) => (
               <div key={d.id} className="flex items-center justify-between py-2.5 border-b border-bg-2 last:border-0">
                 <div className="flex items-center gap-2"><span className="font-semibold text-[13px]">{d.name}</span><Badge color={d.kind === 'OWED' ? '#5bbf7a' : '#d9615c'}>{d.kind === 'OWE' ? 'Debo' : 'Me deben'}</Badge></div>

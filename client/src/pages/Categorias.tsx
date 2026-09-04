@@ -171,7 +171,7 @@ export function Categorias() {
 
         {data.duplicates?.length > 0 && (
           <Card className="mb-4">
-            <h3 className="text-sm font-semibold mb-1">Categorías repetidas</h3>
+            <h3 className="text-title mb-1">Categorías repetidas</h3>
             <p className="text-[12px] text-txt-3 mb-3">
               Estas parecen la misma cosa escrita distinto. Fusionarlas mueve los movimientos
               a la que conservás y no se pierde nada.
@@ -196,11 +196,11 @@ export function Categorias() {
         )}
 
         <Card>
-          <h3 className="text-sm font-semibold mb-3">Mis categorías</h3>
+          <h3 className="text-title mb-3">Mis categorías</h3>
           {cats.length ? cats.map((c) => (
             <div key={c.id} className="flex items-center gap-3 py-3 border-b border-bg-2 last:border-0">
               <div
-                className="w-9 h-9 rounded-[9px] flex items-center justify-center text-[13px] font-bold shrink-0"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0"
                 style={{ background: c.color + '2a', color: c.color }}
               >
                 {c.icon || c.name.slice(0, 2)}

@@ -93,7 +93,7 @@ export function Insights() {
           <Card className="mb-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="w-6 h-6 rounded-lg bg-gold-dim text-gold-2 flex items-center justify-center text-[13px]">◆</span>
-              <h3 className="text-sm font-semibold">Qué podés hacer para mejorar</h3>
+              <h3 className="text-title">Qué podés hacer para mejorar</h3>
             </div>
             <div className="space-y-2">
               {recos.map((r, idx) => {
