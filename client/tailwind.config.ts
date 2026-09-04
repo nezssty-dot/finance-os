@@ -35,14 +35,19 @@ export default {
         sans: ['Poppins', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'system-ui', 'sans-serif'],
         mono: ['SF Mono', 'Cascadia Code', 'Consolas', 'ui-monospace', 'monospace'],
       },
-      // Escala tipográfica del sistema de diseño de Figma (swatch "Poppin"), Hero→Caption.
+      // Escala tipográfica EXACTA del frame "Typo" en Components (nodo 10:897 del
+      // Figma) — familia, tamaño y peso tal cual figuran ahí, no aproximados:
+      //   Hero 40/Regular · H1 30/Medium · H2 30/Regular · H3 24/Regular ·
+      //   H4 20/Regular · Title 16/Regular · Body M 14/Regular (= text-sm) ·
+      //   Body S 12/Regular (= text-xs) · Caption 10/Regular
       fontSize: {
-        hero: ['40px', { lineHeight: '1.1', fontWeight: '700', letterSpacing: '-0.01em' }],
-        h1: ['30px', { lineHeight: '1.2', fontWeight: '600' }],
-        h3: ['24px', { lineHeight: '1.25', fontWeight: '600' }],
-        h4: ['20px', { lineHeight: '1.3', fontWeight: '500' }],
-        title: ['16px', { lineHeight: '1.4', fontWeight: '600' }],
-        caption: ['10px', { lineHeight: '1.4', fontWeight: '700', letterSpacing: '0.06em' }],
+        hero: ['40px', { lineHeight: '1.1', fontWeight: '400' }],
+        h1: ['30px', { lineHeight: '1.2', fontWeight: '500' }],
+        h2: ['30px', { lineHeight: '1.2', fontWeight: '400' }],
+        h3: ['24px', { lineHeight: '1.25', fontWeight: '400' }],
+        h4: ['20px', { lineHeight: '1.3', fontWeight: '400' }],
+        title: ['16px', { lineHeight: '1.4', fontWeight: '400' }],
+        caption: ['10px', { lineHeight: '1.4', fontWeight: '400' }],
       },
       borderRadius: { card: '26px', btn: '999px' },
       animation: { 'fade-in': 'fadeIn .22s ease', 'spin-slow': 'spin .8s linear infinite' },

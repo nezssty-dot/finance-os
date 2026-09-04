@@ -50,6 +50,20 @@
 
 /*
  * ─── SISTEMA DE TEMAS — estética "Free Finance Dashboard UI" (Figma) ───
+ * Estos valores salen de la página "Components" del Figma (nodo 4:2129 → frames
+ * "Colors" y "Typo"), no a ojo: son los hex tal cual están nombrados ahí.
+ *
+ *   Primary/Black #000000 · Primary/Green #00FF6B · Primary/Grey 1 #B6B6B6
+ *   Primary/Grey 2 #F4F4F4 · Primary/BG #F3F4F7 · Primary/White #FFFFFF
+ *   Success S700 #00B771 / S10 #CCFFCD · Warning W700 #B39304 / W10 #FEFACD
+ *   Info I600 #3348D0 / I10 #DAE1FE · Danger D600 #DB413E / D10 #FFEBDD
+ *
+ * (900→10 en cada rampa es "más oscuro → más claro"; se usa el tono ~700 para
+ * texto/ícono —con contraste sobre blanco— y el 10, el más pálido, como fondo del
+ * chip. El oscuro ya estaba verificado contra el frame "Dashboard - Darkmode" en una
+ * pasada anterior — acá solo se corrige el verde de acento, que en esa pasada había
+ * quedado en un verde parecido pero no el de la marca real.)
+ *
  * Arranca en CLARO — así están armadas todas las pantallas de referencia del Figma
  * (Dashboard, Patrimonio, Cuentas, Servicios, Meses, Movimientos). El usuario puede
  * pasar a oscuro desde Configuración; el oscuro es la misma paleta de marca sobre
@@ -60,25 +74,25 @@
  */
 
 :root, [data-theme="light"] {
-  --c-accent: #1aff79; --c-accent-2: #00c853;
-  --c-accent-dim: rgba(26,255,121,.14); --c-accent-line: rgba(26,255,121,.35);
+  --c-accent: #00ff6b; --c-accent-2: #00db71;
+  --c-accent-dim: rgba(0,255,107,.14); --c-accent-line: rgba(0,255,107,.35);
 
-  --c-bg: #f2f3f6; --c-bg-2: #e9eaef;
-  --c-panel: #ffffff; --c-panel-2: #f4f5f8;
-  --c-line: #ebecf0; --c-line-2: #dfe1e6; --c-track: #edeef2;
+  --c-bg: #f3f4f7; --c-bg-2: #e9eaed;
+  --c-panel: #ffffff; --c-panel-2: #f4f4f4;
+  --c-line: #ececec; --c-line-2: #dedede; --c-track: #f0f0f0;
 
-  --c-txt: #14171a; --c-txt-2: #6b7280; --c-txt-3: #9aa1ab;
+  --c-txt: #000000; --c-txt-2: #b6b6b6; --c-txt-3: #9a9a9a;
 
-  --c-success: #16a34a; --c-success-dim: rgba(22,163,74,.13);
-  --c-danger: #e5484d; --c-danger-dim: rgba(229,72,77,.11);
-  --c-warning: #ca8a04; --c-warning-dim: rgba(202,138,4,.14);
-  --c-info: #5e74f4; --c-info-dim: rgba(94,116,244,.12);
+  --c-success: #00b771; --c-success-dim: #ccffcd;
+  --c-danger: #db413e; --c-danger-dim: #ffebdd;
+  --c-warning: #b39304; --c-warning-dim: #fefacd;
+  --c-info: #3348d0; --c-info-dim: #dae1fe;
   --c-violet: #7c5cfc; --c-violet-dim: rgba(124,92,252,.12);
 }
 
 [data-theme="dark"] {
-  --c-accent: #1aff79; --c-accent-2: #00e065;
-  --c-accent-dim: rgba(26,255,121,.14); --c-accent-line: rgba(26,255,121,.35);
+  --c-accent: #00ff6b; --c-accent-2: #00db71;
+  --c-accent-dim: rgba(0,255,107,.14); --c-accent-line: rgba(0,255,107,.35);
 
   --c-bg: #17181a; --c-bg-2: #121314;
   --c-panel: #1e1f22; --c-panel-2: #28292c;
