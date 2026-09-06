@@ -220,6 +220,19 @@ export const MIGRATIONS: Migration[] = [
       `CREATE INDEX IF NOT EXISTS "Budget_userId_idx" ON "Budget"("userId")`,
     ],
   },
+  {
+    version: 7,
+    name: "Meta de ahorro (Goal) + Movement.goalId",
+    // Ahorro y Presupuestos (ex Objetivos) ahora acepta movimientos reales asignados a
+    // mano a una meta, igual que ya hacían los presupuestos de proyecto con budgetId.
+    // Mismo patrón exacto que la v6: ADD COLUMN simple, nullable, sin FK a nivel SQLite
+    // (Movement es la tabla más grande; la limpieza al borrar una Goal la hace goals.ts
+    // a mano, poniendo goalId en NULL antes de borrar).
+    statements: [
+      `ALTER TABLE "Movement" ADD COLUMN "goalId" TEXT`,
+      `CREATE INDEX IF NOT EXISTS "Movement_userId_goalId_idx" ON "Movement"("userId", "goalId")`,
+    ],
+  },
 ];
 
 /** La versión a la que debe llegar la base. Se deriva sola: no hay que acordarse. */

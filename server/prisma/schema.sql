@@ -88,6 +88,7 @@ CREATE TABLE IF NOT EXISTS "Movement" (
     "transferAccountId" TEXT,
     "categoryId" TEXT,
     "budgetId" TEXT,
+    "goalId" TEXT,
     "type" TEXT NOT NULL,
     "amount" REAL NOT NULL,
     "currency" TEXT NOT NULL DEFAULT 'ARS',
@@ -111,6 +112,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS "Movement_userId_source_externalId_key" ON "Mo
 CREATE INDEX IF NOT EXISTS "Movement_userId_date_idx" ON "Movement"("userId", "date");
 CREATE INDEX IF NOT EXISTS "Movement_userId_type_idx" ON "Movement"("userId", "type");
 CREATE INDEX IF NOT EXISTS "Movement_userId_budgetId_idx" ON "Movement"("userId", "budgetId");
+CREATE INDEX IF NOT EXISTS "Movement_userId_goalId_idx" ON "Movement"("userId", "goalId");
 
 -- ─────────────────────────── Investments ───────────────────────────
 
