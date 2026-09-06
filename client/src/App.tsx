@@ -19,6 +19,7 @@ import { Auditoria } from '@/pages/Auditoria'
 import { Timeline } from '@/pages/Timeline'
 import { Forecast } from '@/pages/Forecast'
 import { Insights } from '@/pages/Insights'
+import { Mas } from '@/pages/Mas'
 import { Configuracion } from '@/pages/Configuracion'
 import { Onboarding } from '@/pages/Onboarding'
 import { Spinner } from '@/components/ui'
@@ -86,6 +87,7 @@ export function App() {
         <Route path="timeline" element={<Timeline />} />
         <Route path="forecast" element={<Forecast />} />
         <Route path="insights" element={<Insights />} />
+        <Route path="mas" element={<Mas />} />
         <Route path="configuracion" element={<Configuracion />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -4,14 +4,20 @@ import { useToast } from '@/lib/toast'
 import { api } from '@/lib/api'
 import { ARS, fmtDate } from '@/lib/format'
 import { TopBar } from '@/components/layout/TopBar'
-import { Card, Button, Modal, Input, Badge, EmptyState, SkeletonRows } from '@/components/ui'
+import { Card, Button, Modal, Input, Select, Badge, EmptyState, SkeletonRows } from '@/components/ui'
 
 export function Objetivos() {
   const toast = useToast()
   const { mutate, saving } = useMutate()
   const { data, loading } = useFetch<any>('/goals')
+  const { data: cats } = useFetch<any[]>('/categories')
+  const { data: accts } = useFetch<any[]>('/accounts')
   const [open, setOpen] = useState(false)
   const [adding, setAdding] = useState<any | null>(null)
+  // Distinto de "adding" (Sumar plata = solo etiqueta, no mueve el patrimonio): esto
+  // crea un movimiento real (INCOME/EXPENSE) y lo asigna a la meta, para cuando el
+  // usuario quiere que el aporte quede registrado como cualquier otro movimiento.
+  const [registering, setRegistering] = useState<any | null>(null)
 
   const goals = data?.goals ?? []
   const avg = data?.avgMonthlySaving ?? 0
@@ -45,6 +51,29 @@ export function Objetivos() {
     if (ok) setAdding(null)
   }
 
+  async function saveMovement(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const f = new FormData(e.currentTarget)
+    const ok = await mutate(
+      () =>
+        api('/movements', {
+          method: 'POST',
+          body: {
+            type: f.get('type'),
+            amount: Number(f.get('amount')),
+            currency: 'ARS',
+            description: f.get('description'),
+            date: f.get('date'),
+            categoryId: f.get('categoryId') || undefined,
+            accountId: f.get('accountId') || undefined,
+            goalId: registering.id,
+          },
+        }),
+      { toast, success: 'Movimiento registrado' }
+    )
+    if (ok) setRegistering(null)
+  }
+
   async function remove(g: any) {
     if (!confirm(`¿Borrar "${g.name}"?`)) return
     await mutate(() => api(`/goals/${g.id}`, { method: 'DELETE' }), { toast, success: 'Objetivo eliminado' })
@@ -52,7 +81,7 @@ export function Objetivos() {
 
   return (
     <>
-      <TopBar title="Objetivos" sub={avg > 0 ? `Ahorrás ${ARS(avg)} por mes en promedio` : undefined} />
+      <TopBar title="Ahorro y Presupuestos" sub={avg > 0 ? `Ahorrás ${ARS(avg)} por mes en promedio` : undefined} />
       <div className="p-7 animate-fade-in">
         <div className="mb-4">
           <Button variant="primary" onClick={() => setOpen(true)}>+ Nuevo objetivo</Button>
@@ -90,6 +119,11 @@ export function Objetivos() {
                   <span className="font-mono font-bold text-lg">{ARS(g.saved)}</span>
                   <span className="text-[12px] text-txt-3 font-mono">de {ARS(g.target)}</span>
                 </div>
+                {g.savedFromMovements > 0 && (
+                  <p className="text-[11px] text-txt-3 -mt-1 mb-2">
+                    Incluye {ARS(g.savedFromMovements)} en movimientos registrados.
+                  </p>
+                )}
 
                 <div className="h-2 bg-track rounded-full overflow-hidden">
                   <div
@@ -110,7 +144,10 @@ export function Objetivos() {
                 </div>
 
                 {!g.done && (
-                  <Button className="w-full mt-3" onClick={() => setAdding(g)}>Sumar plata</Button>
+                  <div className="flex gap-2 mt-3">
+                    <Button className="flex-1" onClick={() => setAdding(g)}>Sumar plata</Button>
+                    <Button className="flex-1" onClick={() => setRegistering(g)}>+ Movimiento</Button>
+                  </div>
                 )}
               </Card>
             ))}
@@ -149,6 +186,36 @@ export function Objetivos() {
             <div className="flex gap-3 mt-5">
               <Button type="button" className="flex-1" onClick={() => setAdding(null)}>Cancelar</Button>
               <Button type="submit" variant="primary" className="flex-1" loading={saving}>Sumar</Button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      <Modal open={!!registering} onClose={() => setRegistering(null)} title={`Movimiento para "${registering?.name}"`} sub="Queda registrado como cualquier otro movimiento, y cuenta para esta meta.">
+        {registering && (
+          <form onSubmit={saveMovement} key={registering.id}>
+            <div className="grid grid-cols-2 gap-3">
+              <Select name="type" label="Tipo" defaultValue="INCOME">
+                <option value="INCOME">Ingreso</option>
+                <option value="EXPENSE">Gasto</option>
+              </Select>
+              <Input name="amount" label="Monto" type="number" step="0.01" min="0.01" required placeholder="0.00" />
+            </div>
+            <Input name="description" label="Descripción" required placeholder="Ej: Transferencia a la caja de ahorro" />
+            <Input name="date" label="Fecha" type="date" required defaultValue={new Date().toISOString().slice(0, 10)} />
+            <div className="grid grid-cols-2 gap-3">
+              <Select name="categoryId" label="Categoría (opcional)" defaultValue="">
+                <option value="">Sin categoría</option>
+                {(cats ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </Select>
+              <Select name="accountId" label="Cuenta (opcional)" defaultValue="">
+                <option value="">Sin cuenta</option>
+                {(accts ?? []).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </Select>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <Button type="button" className="flex-1" onClick={() => setRegistering(null)}>Cancelar</Button>
+              <Button type="submit" variant="primary" className="flex-1" loading={saving}>Registrar</Button>
             </div>
           </form>
         )}

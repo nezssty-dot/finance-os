@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Activity, Upload } from 'lucide-react'
+import { Activity, Upload, ArrowUp, ArrowDown } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { useFetch, useMutate } from '@/hooks/useFetch'
 import { useToast } from '@/lib/toast'
 import { api } from '@/lib/api'
-import { money, fmtDate, MONTHS } from '@/lib/format'
+import { ARS, MONTHS } from '@/lib/format'
 import { TopBar } from '@/components/layout/TopBar'
-import { Card, Button, Modal, Input, Select, Badge, EmptyState, SkeletonRows } from '@/components/ui'
+import { Card, Button, Modal, Input, Select, EmptyState, SkeletonRows, MovementRow, MovementsHeader } from '@/components/ui'
 
 const TYPES = [
   { v: 'EXPENSE', label: 'Gasto' },
@@ -17,8 +17,11 @@ const TYPES = [
   { v: 'DEBT_PAYMENT', label: 'Pago de deuda' },
   { v: 'COLLECTION', label: 'Cobro' },
 ]
-const LABEL: Record<string, string> = Object.fromEntries(TYPES.map((t) => [t.v, t.label]))
-const POSITIVE = ['INCOME', 'COLLECTION']
+const SORTS = [
+  { v: 'date', label: 'Fecha' },
+  { v: 'description', label: 'Descripción' },
+  { v: 'amount', label: 'Monto' },
+]
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -50,6 +53,7 @@ export function Movimientos() {
   const { data: categories } = useFetch<any[]>('/categories')
   const { data: accounts } = useFetch<any[]>('/accounts')
   const { data: budgets } = useFetch<any[]>('/budgets')
+  const { data: dash } = useFetch<any>(`/analysis/dashboard?year=${year}`, [year])
   const projects = (budgets ?? []).filter((b) => b.type === 'PROJECT')
 
   function openNew() {
@@ -93,16 +97,6 @@ export function Movimientos() {
     })
   }
 
-  function toggleSort(col: string) {
-    if (sort === col) setOrder(order === 'asc' ? 'desc' : 'asc')
-    else {
-      setSort(col)
-      setOrder('desc')
-    }
-    setPage(1)
-  }
-  const arrow = (col: string) => (sort === col ? (order === 'asc' ? ' ↑' : ' ↓') : '')
-
   return (
     <>
       <TopBar title="Movimientos" sub={data ? `${data.total} en ${year}` : undefined}>
@@ -114,6 +108,31 @@ export function Movimientos() {
         </Link>
       </TopBar>
       <div className="p-7 animate-fade-in">
+        {dash?.activity && (() => {
+          const a = dash.activity
+          const cards = [
+            { label: 'Hoy ganaste', value: a.todayIncome, tone: 'income' as const },
+            { label: 'Hoy gastaste', value: a.todayExpense, tone: 'expense' as const },
+            { label: 'Balance semanal', value: a.weekBalance, tone: 'balance' as const },
+            { label: 'Balance mensual', value: a.monthBalance, tone: 'balance' as const },
+          ]
+          return (
+            <div className="grid gap-3 mb-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+              {cards.map((c) => {
+                const positive = c.tone === 'income' || (c.tone === 'balance' && c.value >= 0)
+                const color = c.tone === 'expense' ? 'text-danger' : positive ? 'text-success' : 'text-danger'
+                const sign = c.tone === 'balance' && c.value !== 0 ? (c.value > 0 ? '+' : '') : c.tone === 'income' && c.value > 0 ? '+' : ''
+                return (
+                  <Card key={c.label} className="flex flex-col items-center text-center justify-center gap-1.5 py-4">
+                    <div className="text-[11px] text-txt-3 leading-tight">{c.label}</div>
+                    <div className={`font-mono font-bold text-title leading-none ${color}`}>{sign}{ARS(Math.abs(c.value))}</div>
+                  </Card>
+                )
+              })}
+            </div>
+          )
+        })()}
+
         <div className="flex flex-wrap gap-2 mb-4 items-center">
           <input
             value={q}
@@ -140,20 +159,24 @@ export function Movimientos() {
             <option value="">Toda cuenta</option>
             {(accounts ?? []).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
+          <div className="flex items-center gap-1">
+            <select value={sort} onChange={(e) => { setSort(e.target.value); setPage(1) }} className="bg-bg-2 border border-line text-txt-2 px-3 py-2 rounded-btn text-sm">
+              {SORTS.map((s) => <option key={s.v} value={s.v}>{s.label}</option>)}
+            </select>
+            <button
+              onClick={() => setOrder(order === 'asc' ? 'desc' : 'asc')}
+              title={order === 'asc' ? 'Ascendente' : 'Descendente'}
+              className="w-9 h-9 rounded-full bg-bg-2 border border-line text-txt-2 hover:text-txt flex items-center justify-center shrink-0 transition-colors"
+            >
+              {order === 'asc' ? <ArrowUp size={15} /> : <ArrowDown size={15} />}
+            </button>
+          </div>
           <Button variant="primary" onClick={openNew}>+ Nuevo</Button>
         </div>
 
-        <Card className="p-0 overflow-hidden">
-          <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-3 px-5 py-3 border-b border-line text-[11px] font-semibold uppercase tracking-wider text-txt-3">
-            <button onClick={() => toggleSort('date')} className="text-left hover:text-txt">Fecha{arrow('date')}</button>
-            <button onClick={() => toggleSort('description')} className="text-left hover:text-txt">Descripción{arrow('description')}</button>
-            <span>Cuenta</span>
-            <button onClick={() => toggleSort('amount')} className="text-right hover:text-txt">Monto{arrow('amount')}</button>
-            <span />
-          </div>
-
+        <Card className="p-4">
           {loading && !data ? (
-            <div className="p-5"><SkeletonRows rows={8} /></div>
+            <SkeletonRows rows={8} />
           ) : !data?.items.length ? (
             <EmptyState
               icon="🧾"
@@ -162,35 +185,18 @@ export function Movimientos() {
               action={<Button variant="primary" onClick={openNew}>+ Nuevo movimiento</Button>}
             />
           ) : (
-            data.items.map((m: any) => {
-              const pos = POSITIVE.includes(m.type)
-              const neutral = m.type === 'TRANSFER' || m.type === 'INTERNAL'
-              return (
-                <div key={m.id} className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-3 items-center px-5 py-3 border-b border-bg-2 last:border-0 hover:bg-panel-2/40 transition-colors group">
-                  <span className="text-[12px] text-txt-3 font-mono whitespace-nowrap">{fmtDate(m.date)}</span>
-                  <div className="min-w-0">
-                    <div className="font-semibold text-[13px] truncate">{m.description}</div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <Badge color={neutral ? '#6a6a74' : pos ? '#5bbf7a' : '#d9615c'}>{LABEL[m.type] ?? m.type}</Badge>
-                      {m.category && <Badge color={m.category.color}>{m.category.name}</Badge>}
-                      {m.budget && <Badge color="var(--c-accent)">{m.budget.name}</Badge>}
-                      {m.source === 'MERCADO_PAGO' && <Badge color="#00AAFF">MP</Badge>}
-                    </div>
-                  </div>
-                  <span className="text-[12px] text-txt-3 whitespace-nowrap">
-                    {m.account?.name ?? '—'}
-                    {m.transferAccount && ` → ${m.transferAccount.name}`}
-                  </span>
-                  <span className={`font-mono font-bold text-[13.5px] text-right whitespace-nowrap ${neutral ? 'text-txt-2' : pos ? 'text-success' : 'text-danger'}`}>
-                    {neutral ? '' : pos ? '+' : '−'}{money(Number(m.amount), m.currency)}
-                  </span>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => openEdit(m)} className="text-txt-3 hover:text-gold-2 text-xs px-1.5 py-1">Editar</button>
-                    <button onClick={() => remove(m)} className="text-txt-3 hover:text-danger text-xs px-1.5 py-1">Borrar</button>
-                  </div>
-                </div>
-              )
-            })
+            <>
+              <MovementsHeader />
+              {data.items.map((m: any) => (
+                <MovementRow
+                  key={m.id}
+                  m={m}
+                  showAccount
+                  onEdit={() => openEdit(m)}
+                  onDelete={() => remove(m)}
+                />
+              ))}
+            </>
           )}
         </Card>
 

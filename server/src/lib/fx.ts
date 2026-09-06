@@ -15,8 +15,11 @@
  * con él.
  */
 
-/** Los tipos de dólar que interesan. "MEP" es el que usa el mercado para valuar. */
-export type FxKind = "MEP" | "OFICIAL" | "BLUE" | "CCL" | "CRIPTO";
+/** Los tipos de dólar que interesan. "MEP" es el que usa el mercado para valuar.
+ *  EUR/BRL/BTC son cotizaciones extra (contra ARS) que el usuario puede sumar a la
+ *  tarjeta de Cotización — no participan de la valuación de patrimonio, que sigue
+ *  siendo 100% dólar (ver pickQuote). */
+export type FxKind = "MEP" | "OFICIAL" | "BLUE" | "CCL" | "CRIPTO" | "EUR" | "BRL" | "BTC";
 
 export interface FxQuote {
   kind: FxKind;

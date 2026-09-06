@@ -32,7 +32,7 @@
 // Tipos
 // ─────────────────────────────────────────────────────────────
 
-export type ColumnRole = "date" | "description" | "amount" | "debit" | "credit" | "balance" | "ignore";
+export type ColumnRole = "date" | "description" | "amount" | "debit" | "credit" | "balance" | "type" | "ignore";
 
 export interface ColumnMapping {
   /** Índice de columna → qué significa. */
@@ -162,6 +162,11 @@ const HEADER_HINTS: Record<Exclude<ColumnRole, "ignore">, string[]> = {
     "acreditacion", "acreditamiento", "cobro",
   ],
   balance: ["saldo", "balance", "saldo actual", "saldo parcial"],
+  // Columna de TIPO por fila: cada celda dice "Egreso"/"Ingreso" (o similar), a
+  // diferencia de detectForcedType (que mira el NOMBRE del header y fuerza TODO el
+  // archivo). Acá el archivo trae ambos tipos mezclados y cada fila dice el suyo —
+  // planillas tipo "Tipo,Fecha,Concepto,Monto,Moneda,Nota" con Monto siempre positivo.
+  type: ["tipo", "type", "tipo de movimiento", "movimiento tipo", "in/out", "entrada/salida"],
 };
 
 const norm = (s: string) =>
@@ -199,6 +204,20 @@ export function looksLikeAmount(v: string): boolean {
  * Si aparecen las dos señales (ingreso Y gasto), no fuerza nada: ese es el caso del banco
  * con columnas separadas, que se resuelve por débito/crédito.
  */
+const EXPENSE_WORDS = ["egreso", "gasto", "expense", "debito", "debit", "salida", "pago", "cargo", "retiro"];
+const INCOME_WORDS = ["ingreso", "income", "credito", "credit", "entrada", "cobro", "deposito", "abono"];
+
+/** Lee una celda de la columna "type" (Egreso/Ingreso, por fila) y dice qué signo le
+ * corresponde a ESA fila. null si la celda no dice nada reconocible (esa fila no se
+ * fuerza, y el signo sale del importe como siempre). */
+export function parseRowType(v: string): "INCOME" | "EXPENSE" | null {
+  const h = norm(v);
+  if (!h) return null;
+  if (EXPENSE_WORDS.some((w) => h.includes(w))) return "EXPENSE";
+  if (INCOME_WORDS.some((w) => h.includes(w))) return "INCOME";
+  return null;
+}
+
 export function detectForcedType(
   headerRow: string[] | null,
   roles: ColumnRole[]
@@ -606,6 +625,7 @@ export function analyze(text: string, override?: Partial<ColumnMapping>): Import
   const creditCol = roles.indexOf("credit");
   const amountCol = roles.indexOf("amount");
   const balanceCol = roles.indexOf("balance");
+  const typeCol = roles.indexOf("type");
 
   body.forEach((cells, idx) => {
     const lineNo = idx + dataStart + 1;
@@ -637,6 +657,15 @@ export function analyze(text: string, override?: Partial<ColumnMapping>): Import
     // número (positivo) es un egreso. Sin esto, entraba como ingreso.
     if (amount !== null && forcedType) {
       amount = forcedType === "EXPENSE" ? -Math.abs(amount) : Math.abs(amount);
+    }
+
+    // Columna "Tipo" por fila (Egreso/Ingreso mezclados en el mismo archivo, con Monto
+    // siempre positivo) — manda el signo de ESTA fila puntual, con más autoridad que
+    // forcedType (que es un promedio de todo el archivo) porque acá cada fila lo dice
+    // explícito. Si la celda no dice nada reconocible, no se toca el signo ya calculado.
+    if (amount !== null && typeCol >= 0) {
+      const rowType = parseRowType(cells[typeCol] ?? "");
+      if (rowType) amount = rowType === "EXPENSE" ? -Math.abs(amount) : Math.abs(amount);
     }
 
     if (amount === null || amount === 0) {

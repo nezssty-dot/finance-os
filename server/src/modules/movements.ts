@@ -28,6 +28,8 @@ const createSchema = z.object({
   // Presupuesto tipo "proyecto" al que se asigna este movimiento (ej. "Viaje a Buenos
   // Aires"), sea cual sea su categoría. `null` explícito = desasignar.
   budgetId: z.string().nullable().optional(),
+  // Meta de ahorro (Goal) a la que se asigna este movimiento — mismo patrón que budgetId.
+  goalId: z.string().nullable().optional(),
 });
 const updateSchema = createSchema.partial();
 
@@ -47,6 +49,7 @@ movementsRouter.get("/", ah(async (req, res) => {
   if (q.accountId) where.accountId = q.accountId;
   if (q.source) where.source = q.source;
   if (q.budgetId) where.budgetId = q.budgetId === "none" ? null : q.budgetId;
+  if (q.goalId) where.goalId = q.goalId === "none" ? null : q.goalId;
 
   if (q.q) {
     // SQLite has no case-insensitive `mode`, so we match on both the raw text and
@@ -84,7 +87,7 @@ movementsRouter.get("/", ah(async (req, res) => {
       orderBy: { [sort]: order },
       skip: (page - 1) * pageSize,
       take: pageSize,
-      include: { category: true, account: true, transferAccount: true, budget: true },
+      include: { category: true, account: true, transferAccount: true, budget: true, goal: true },
     }),
   ]);
 
@@ -107,10 +110,17 @@ async function assertProjectBudget(userId: string, id: string | null | undefined
   if (!budget) throw new HttpError(404, "Presupuesto de proyecto inválido");
 }
 
+async function assertGoal(userId: string, id: string | null | undefined) {
+  if (!id) return;
+  const goal = await prisma.goal.findFirst({ where: { id, userId } });
+  if (!goal) throw new HttpError(404, "Meta de ahorro inválida");
+}
+
 movementsRouter.post("/", ah(async (req, res) => {
   const data = createSchema.parse(req.body);
   await assertOwnsAccounts(req.userId!, [data.accountId, data.transferAccountId]);
   await assertProjectBudget(req.userId!, data.budgetId);
+  await assertGoal(req.userId!, data.goalId);
 
   if (data.type === "TRANSFER" && !data.transferAccountId)
     throw new HttpError(400, "Una transferencia necesita cuenta de destino");
@@ -133,7 +143,7 @@ movementsRouter.post("/", ah(async (req, res) => {
 
   const row = await prisma.movement.create({
     data: { ...data, currency, categoryId, userId: req.userId! },
-    include: { category: true, account: true, budget: true },
+    include: { category: true, account: true, budget: true, goal: true },
   });
 
   // An explicit category is the user teaching us. Remember it.
@@ -151,11 +161,12 @@ movementsRouter.patch("/:id", ah(async (req, res) => {
   if (!found) throw new HttpError(404, "Movimiento no encontrado");
   await assertOwnsAccounts(req.userId!, [data.accountId, data.transferAccountId]);
   if (data.budgetId !== undefined) await assertProjectBudget(req.userId!, data.budgetId);
+  if (data.goalId !== undefined) await assertGoal(req.userId!, data.goalId);
 
   const row = await prisma.movement.update({
     where: { id: req.params.id },
     data,
-    include: { category: true, account: true, budget: true },
+    include: { category: true, account: true, budget: true, goal: true },
   });
 
   // Re-categorising is the strongest signal we get: the user is correcting us.

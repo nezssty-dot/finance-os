@@ -124,6 +124,9 @@ model Movement {
   // Budget, budgets.ts limpia este campo a mano antes de borrar, así nunca queda
   // colgando un id que ya no existe.
   budgetId    String?
+  // Meta de ahorro (Goal) a la que se asignó a mano este movimiento — mismo patrón que
+  // budgetId: sin FK a nivel SQLite, goals.ts limpia este campo antes de borrar la meta.
+  goalId      String?
   type        String   // INCOME, EXPENSE, TRANSFER, INTERNAL, INVESTMENT, DEBT_PAYMENT, COLLECTION
   amount      Float
   currency    String   @default("ARS")
@@ -139,11 +142,13 @@ model Movement {
   transferAccount Account?  @relation("MovementTransferAccount", fields: [transferAccountId], references: [id], onDelete: SetNull)
   category        Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   budget          Budget?   @relation(fields: [budgetId], references: [id])
+  goal            Goal?     @relation(fields: [goalId], references: [id])
   servicePayment  ServicePayment?
   @@unique([userId, source, externalId])
   @@index([userId, date])
   @@index([userId, type])
   @@index([userId, budgetId])
+  @@index([userId, goalId])
 }
 
 // ─── Investments ───
@@ -171,7 +176,8 @@ model Goal {
   saved     Float     @default(0)
   deadline  DateTime?
   createdAt DateTime  @default(now())
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movements Movement[]
   @@index([userId])
 }
 

@@ -64,6 +64,15 @@ export function Inversiones() {
   }
   const currencies = Object.keys(byCurrency).sort((c) => (c === 'ARS' ? -1 : 1))
 
+  async function handleDeleteAll() {
+    if (!confirm(`¿Borrar las ${invs.length} inversiones (incluidas las sincronizadas de IOL)? Esto no se puede deshacer. Si IOL sigue conectado, un próximo sync puede volver a traer lo que siga abierto en el broker.`)) return
+    try {
+      await api('/investments', { method: 'DELETE' })
+      toast('Inversiones eliminadas', 'success')
+      refetch()
+    } catch (e: any) { toast(e.message || 'No se pudo borrar', 'error') }
+  }
+
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setSaving(true)
@@ -133,7 +142,14 @@ export function Inversiones() {
           </Card>
         )}
         <Card>
-          <h3 className="text-title mb-3">Mis inversiones</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-title">Mis inversiones</h3>
+            {invs.length > 0 && (
+              <button onClick={handleDeleteAll} className="text-[12px] text-txt-3 hover:text-danger transition-colors">
+                Borrar todas
+              </button>
+            )}
+          </div>
           {invs.length ? invs.map((i) => {
             const g = i.currentValue - i.capital
             const p = i.capital > 0 ? ((g / i.capital) * 100).toFixed(1) : '0'

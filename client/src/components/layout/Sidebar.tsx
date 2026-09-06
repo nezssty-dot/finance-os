@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom'
 import { NavLink, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  LayoutDashboard, Receipt, Repeat, Landmark, Calendar,
-  PieChart, TrendingUp, CreditCard, Target, Flag, Sparkles,
-  FileText, Settings,
+  LayoutDashboard, Receipt, Calendar,
+  PieChart, Target, Flag, Sparkles,
+  FileText, MoreHorizontal,
 } from 'lucide-react'
 
 import { useStore } from '@/lib/store'
@@ -14,32 +14,35 @@ import { FinanceLogo } from '@/components/FinanceLogo'
 
 // Ver NOTAS-CONSOLIDACION.md: 20 pantallas eran demasiadas para un riel de solo
 // íconos (y en Windows, con menos alto disponible, las últimas se cortaban). Estas
-// son las 13 secciones "madre"; Importar y Timeline viven dentro de Movimientos,
-// Categorías y Auditoría dentro de Configuración, Forecast dentro de Insights — con
-// un link directo desde cada una, no un ícono propio del menú.
+// son las secciones "madre" que quedan con ícono propio; Timeline, Categorías,
+// Auditoría y Forecast viven dentro de Más, y Cuentas/Servicios/Inversiones/Deudas
+// también se sumaron ahí — con un link directo desde cada una, no un ícono propio.
 const NAV = [
   { group: null, items: [
     { to: '/', label: 'Dashboard', Icon: LayoutDashboard },
   ]},
   { group: 'Día a día', items: [
     { to: '/movimientos', label: 'Movimientos', Icon: Receipt },
-    { to: '/servicios', label: 'Servicios', Icon: Repeat },
-    { to: '/cuentas', label: 'Cuentas', Icon: Landmark },
     { to: '/meses', label: 'Meses', Icon: Calendar },
   ]},
   { group: 'Mi plata', items: [
     { to: '/patrimonio', label: 'Patrimonio', Icon: PieChart },
-    { to: '/inversiones', label: 'Inversiones', Icon: TrendingUp },
-    { to: '/deudas', label: 'Deudas', Icon: CreditCard },
   ]},
   { group: 'Planificación', items: [
     { to: '/presupuestos', label: 'Presupuestos', Icon: Target },
-    { to: '/objetivos', label: 'Objetivos', Icon: Flag },
+    { to: '/objetivos', label: 'Ahorro y Presupuestos', Icon: Flag },
     { to: '/insights', label: 'Insights', Icon: Sparkles },
   ]},
   { group: 'Sistema', items: [
+    // Configuración ya no tiene ícono acá — vive arriba, en la píldora del TopBar
+    // (junto a Notificaciones), así que sacarla de acá no la deja inaccesible.
     { to: '/reportes', label: 'Reportes', Icon: FileText },
-    { to: '/configuracion', label: 'Configuración', Icon: Settings },
+  ]},
+  { group: 'Más', items: [
+    // Un solo ícono acá adentro de "Más" en vez de uno por función — Timeline,
+    // Importar, Categorías, Auditoría y Forecast viven todas en /mas para no volver
+    // a inflar el riel con íconos sueltos.
+    { to: '/mas', label: 'Más', Icon: MoreHorizontal },
   ]},
 ]
 
@@ -69,9 +72,13 @@ export function Sidebar() {
   // página madre — si no, al entrar a /timeline no se prende ningún ícono y se pierde
   // la orientación.
   const parentOf: Record<string, string> = {
-    '/timeline': '/movimientos', '/importar': '/movimientos',
-    '/categorias': '/configuracion', '/auditoria': '/configuracion',
-    '/forecast': '/insights',
+    '/timeline': '/mas',
+    '/categorias': '/mas', '/auditoria': '/mas',
+    '/forecast': '/mas',
+    '/cuentas': '/mas', '/servicios': '/mas',
+    '/inversiones': '/mas', '/deudas': '/mas',
+    // Importar ahora se entra desde un botón en Movimientos, no desde Más.
+    '/importar': '/movimientos',
   }
   const effectivePath = parentOf[location.pathname] ?? location.pathname
 
@@ -98,7 +105,6 @@ export function Sidebar() {
         <nav className="flex flex-col items-center gap-0.5 flex-1">
           {NAV.map((section, si) => (
             <div key={si} className="flex flex-col items-center gap-0.5">
-              {section.group && <div className="w-6 h-px bg-white/10 my-1.5 shrink-0" />}
               {section.items.map((n) => (
                 <NavLink
                   key={n.to}

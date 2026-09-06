@@ -36,9 +36,12 @@ async function avgMonthlySaving(userId: string): Promise<number> {
   return months.reduce((s, v) => s + v, 0) / months.length;
 }
 
-const shape = (g: Goal, avg: number) => {
+const shape = (g: Goal, avg: number, movementsSaved = 0) => {
   const target = Number(g.target);
-  const saved = Number(g.saved);
+  // "saved" manual (el contador de /contribute, para earmarkear plata que ya tenés) +
+  // la suma de los movimientos reales que el usuario asignó a mano a esta meta. Las dos
+  // fuentes conviven: una no reemplaza a la otra.
+  const saved = Number(g.saved) + movementsSaved;
   const remaining = Math.max(target - saved, 0);
   const pct = target > 0 ? Math.min(Math.round((saved / target) * 100), 100) : 0;
 
@@ -55,16 +58,32 @@ const shape = (g: Goal, avg: number) => {
   return {
     id: g.id, name: g.name, deadline: g.deadline,
     target, saved, remaining, pct, etaMonths, etaDate, onTrack,
+    savedManual: Number(g.saved), savedFromMovements: movementsSaved,
     done: saved >= target,
   };
 };
 
+// Cuánto juntó cada meta en movimientos reales asignados a mano (goalId) — mismo patrón
+// que spentByProject en budgets.ts. Sin conversión de moneda: suma tal cual el amount,
+// así que por ahora es más honesto asignar movimientos en ARS a una meta.
+async function savedByGoal(userId: string): Promise<Record<string, number>> {
+  const rows = await prisma.movement.groupBy({
+    by: ["goalId"],
+    where: { userId, goalId: { not: null } },
+    _sum: { amount: true },
+  });
+  const out: Record<string, number> = {};
+  for (const row of rows) if (row.goalId) out[row.goalId] = Number(row._sum.amount ?? 0);
+  return out;
+}
+
 goalsRouter.get("/", ah(async (req, res) => {
-  const [rows, avg] = await Promise.all([
+  const [rows, avg, byGoal] = await Promise.all([
     prisma.goal.findMany({ where: { userId: req.userId }, orderBy: { createdAt: "asc" } }),
     avgMonthlySaving(req.userId!),
+    savedByGoal(req.userId!),
   ]);
-  res.json({ avgMonthlySaving: Math.round(avg), goals: rows.map((g) => shape(g, avg)) });
+  res.json({ avgMonthlySaving: Math.round(avg), goals: rows.map((g) => shape(g, avg, byGoal[g.id] ?? 0)) });
 }));
 
 goalsRouter.post("/", ah(async (req, res) => {
@@ -78,12 +97,17 @@ goalsRouter.patch("/:id", ah(async (req, res) => {
   const found = await prisma.goal.findFirst({ where: { id: req.params.id, userId: req.userId } });
   if (!found) throw new HttpError(404, "Objetivo no encontrado");
   const row = await prisma.goal.update({ where: { id: req.params.id }, data });
-  res.json(shape(row, await avgMonthlySaving(req.userId!)));
+  const byGoal = await savedByGoal(req.userId!);
+  res.json(shape(row, await avgMonthlySaving(req.userId!), byGoal[row.id] ?? 0));
 }));
 
 goalsRouter.delete("/:id", ah(async (req, res) => {
   const found = await prisma.goal.findFirst({ where: { id: req.params.id, userId: req.userId } });
   if (!found) throw new HttpError(404, "Objetivo no encontrado");
+  // Sin FK a nivel SQLite en Movement.goalId (mismo motivo que budgetId) — hay que
+  // desasignar a mano antes de borrar, si no los movimientos quedan con un goalId
+  // colgado que ya no existe.
+  await prisma.movement.updateMany({ where: { userId: req.userId, goalId: found.id }, data: { goalId: null } });
   await prisma.goal.delete({ where: { id: req.params.id } });
   res.status(204).end();
 }));

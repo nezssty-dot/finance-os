@@ -79,6 +79,18 @@ investmentsRouter.get("/", ah(async (req, res) => {
   res.json({ items, breakdown });
 }));
 
+// Reset total: borra TODAS las inversiones manuales y TODAS las tenencias de IOL del
+// usuario, para "empezar de 0" sin ir fila por fila. Si IOL sigue conectado, un próximo
+// sync puede volver a traer las posiciones que sigan abiertas en el broker — desconectar
+// la integración en Configuración es lo que evita que reaparezcan.
+investmentsRouter.delete("/", ah(async (req, res) => {
+  const [investments, holdings] = await Promise.all([
+    prisma.investment.deleteMany({ where: { userId: req.userId } }),
+    prisma.holding.deleteMany({ where: { userId: req.userId } }),
+  ]);
+  res.json({ deleted: investments.count + holdings.count });
+}));
+
 investmentsRouter.post("/", ah(async (req, res) => {
   const data = createSchema.parse(req.body);
   const row = await prisma.investment.create({ data: { ...data, userId: req.userId! } });
@@ -92,11 +104,24 @@ investmentsRouter.patch("/:id", ah(async (req, res) => {
   res.json(shape(await prisma.investment.update({ where: { id: req.params.id }, data })));
 }));
 
+// Borra una inversión cargada a mano O una tenencia sincronizada de IOL (Holding) — la
+// lista de "Inversiones" mezcla las dos fuentes (ver GET de arriba) y antes esto solo
+// buscaba en Investment, así que borrar una fila de IOL tiraba 404 "no encontrada" y el
+// usuario quedaba sin forma de sacarla de la vista. Un Holding borrado así vuelve a
+// aparecer si IOL la sincroniza de nuevo (sigue abierta en el broker) — es un borrado
+// real, no un "cerrar posición"; si no la querés más, hay que desconectar IOL también.
 investmentsRouter.delete("/:id", ah(async (req, res) => {
-  const found = await prisma.investment.findFirst({ where: { id: req.params.id, userId: req.userId } });
-  if (!found) throw new HttpError(404, "Inversión no encontrada");
-  await prisma.investment.delete({ where: { id: req.params.id } });
-  res.status(204).end();
+  const inv = await prisma.investment.findFirst({ where: { id: req.params.id, userId: req.userId } });
+  if (inv) {
+    await prisma.investment.delete({ where: { id: inv.id } });
+    return res.status(204).end();
+  }
+  const holding = await prisma.holding.findFirst({ where: { id: req.params.id, userId: req.userId } });
+  if (holding) {
+    await prisma.holding.delete({ where: { id: holding.id } });
+    return res.status(204).end();
+  }
+  throw new HttpError(404, "Inversión no encontrada");
 }));
 
 // Sell (fully or partially): the proceeds land back in an account as income, and the

@@ -46,7 +46,11 @@ export function InteractiveDonut({ slices, size = 190, currency = 'ARS' }: Props
     const arc = {
       d,
       i,
-      len,
+      // +0.75 de superposición: sin esto, el borde entre dos porciones de color muy
+      // distinto (ej. azul/marrón) se ve "mal cortado" — un hairline por el
+      // antialiasing del stroke-dasharray. Cada porción se dibuja un pelo más larga
+      // de lo que le toca y la siguiente (pintada encima, en orden) tapa la costura.
+      len: len + 0.75,
       dashOffset: -offset,
       isActive: active === i,
       dim: active !== null && active !== i,

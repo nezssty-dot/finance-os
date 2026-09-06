@@ -23,9 +23,14 @@ export function AppShell() {
           className="flex-1 flex flex-col"
         >
           {/* key por ruta: si una pantalla crashea, al cambiar de sección el boundary
-              se remonta limpio en vez de quedar mostrando el error. */}
+              se remonta limpio en vez de quedar mostrando el error. Ancho máximo acá
+              (no en cada página): en el Figma el contenido tiene una proporción fija,
+              no ocupa todo el monitor — en una pantalla grande el contenido queda
+              centrado con esa misma proporción en vez de estirarse borde a borde. */}
           <ErrorBoundary key={location.pathname}>
-            <Outlet />
+            <div className="w-full max-w-[1440px] mx-auto flex-1 flex flex-col">
+              <Outlet />
+            </div>
           </ErrorBoundary>
         </motion.div>
       </main>

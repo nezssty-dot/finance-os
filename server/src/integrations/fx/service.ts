@@ -126,6 +126,75 @@ export async function currentRate(now = new Date()): Promise<{
   };
 }
 
+function extraNum(v: unknown): number | null {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Cotizaciones "extra" para la tarjeta de Cotización (EUR, BRL, BTC — todas contra ARS).
+ * Independientes del dólar que valúa el patrimonio: si fallan, no rompen nada más que
+ * su propia fila en la tarjeta.
+ */
+async function fetchExtraQuotes(now: Date): Promise<FxQuote[]> {
+  const out: FxQuote[] = [];
+
+  try {
+    const resp = await fetch("https://dolarapi.com/v1/cotizaciones", {
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (resp.ok) {
+      const rows = await resp.json();
+      for (const row of Array.isArray(rows) ? rows : []) {
+        const moneda = String(row?.moneda ?? "").toUpperCase();
+        if (moneda !== "EUR" && moneda !== "BRL") continue;
+        const sell = extraNum(row.venta);
+        const buy = extraNum(row.compra);
+        if (sell === null && buy === null) continue;
+        const rawDate = row.fechaActualizacion ?? row.fecha;
+        const date = rawDate ? new Date(String(rawDate)) : now;
+        out.push({ kind: moneda as FxKind, buy, sell, date: Number.isNaN(date.getTime()) ? now : date, source: "dolarapi" });
+      }
+    }
+  } catch { /* EUR/BRL quedan sin esta fuente; la tarjeta simplemente no las muestra */ }
+
+  try {
+    const resp = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=ars", {
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      const ars = extraNum(data?.bitcoin?.ars);
+      if (ars !== null) out.push({ kind: "BTC", buy: ars, sell: ars, date: now, source: "coingecko" });
+    }
+  } catch { /* ídem BTC */ }
+
+  return out;
+}
+
+/** Refresca EUR/BRL/BTC si la fila guardada quedó vieja (otro día calendario). */
+export async function refreshExtraRatesIfStale(now = new Date()): Promise<void> {
+  const quotes = await latestQuotes();
+  const tracked: FxKind[] = ["EUR", "BRL", "BTC"];
+  const stale = tracked.some((k) => {
+    const q = quotes.find((x) => x.kind === k);
+    return !q || isStale(q.date, now);
+  });
+  if (!stale) return;
+
+  const fresh = await fetchExtraQuotes(now);
+  const date = today(now);
+  for (const q of fresh) {
+    await prisma.fxRate.upsert({
+      where: { kind_date: { kind: q.kind, date } },
+      update: { buy: q.buy, sell: q.sell, source: q.source, fetchedAt: now },
+      create: { kind: q.kind, date, buy: q.buy, sell: q.sell, source: q.source, fetchedAt: now },
+    });
+  }
+}
+
 /** Historial para el gráfico: una fila por día del tipo pedido. */
 export async function rateHistory(kind: FxKind = "MEP", days = 90) {
   const from = new Date();

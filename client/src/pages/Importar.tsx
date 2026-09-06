@@ -91,7 +91,7 @@ interface AccountOption {
 function roleLabelEs(role: string): string {
   const map: Record<string, string> = {
     date: 'Fecha', description: 'Descripción', amount: 'Importe',
-    debit: 'Débito', credit: 'Crédito', balance: 'Saldo', ignore: 'ignorada',
+    debit: 'Débito', credit: 'Crédito', balance: 'Saldo', type: 'Tipo (Ingreso/Egreso)', ignore: 'ignorada',
   }
   return map[role] ?? role
 }

@@ -1,10 +1,60 @@
+import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Settings, Bell } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { isMacDesktop, MAC_INSET } from '@/lib/platform'
 
 interface Props { title: string; sub?: string; children?: React.ReactNode }
 
+/**
+ * Configuración + Notificaciones, en una píldora como la del año — reemplaza el bloque
+ * de usuario/"LOCAL" que había antes ahí. Notificaciones todavía no tiene nada atrás
+ * (no hay backend de eventos): el popover es un placeholder a propósito, para no dejar
+ * un ícono que no hace nada al clickearlo mientras se decide qué va a avisar.
+ */
+function TopBarActions() {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const close = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [open])
+
+  return (
+    <div className="flex items-center gap-1 bg-panel-2 rounded-full p-1 shrink-0">
+      <Link
+        to="/configuracion"
+        className="w-8 h-9 rounded-full flex items-center justify-center text-txt-2 hover:text-txt hover:bg-panel transition-colors"
+        title="Configuración"
+      >
+        <Settings size={16} />
+      </Link>
+      <div className="relative" ref={ref}>
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="w-8 h-9 rounded-full flex items-center justify-center text-txt-2 hover:text-txt hover:bg-panel transition-colors"
+          title="Notificaciones"
+        >
+          <Bell size={16} />
+        </button>
+        {open && (
+          <div className="absolute right-0 top-full mt-2 w-64 bg-panel border border-line rounded-[14px] shadow-lg p-4 z-20">
+            <p className="text-[13px] font-semibold mb-1">Notificaciones</p>
+            <p className="text-[12.5px] text-txt-3 leading-relaxed">Todavía no hay nada acá — la vamos a sumar más adelante.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function TopBar({ title, sub, children }: Props) {
-  const { year, setYear, user } = useStore()
+  const { year, setYear } = useStore()
   const mac = isMacDesktop()
 
   return (
@@ -36,15 +86,7 @@ export function TopBar({ title, sub, children }: Props) {
           <span className="px-2 font-semibold font-mono text-sm min-w-[46px] text-center tabular-nums">{year}</span>
           <button onClick={() => setYear(year + 1)} className="w-8 h-9 text-txt-2 hover:text-txt text-sm transition-colors">›</button>
         </div>
-        <div className="hidden md:flex items-center gap-2.5 shrink-0">
-          <div className="w-9 h-9 rounded-full bg-panel-2 flex items-center justify-center font-bold text-gold-2 text-xs shrink-0">
-            {user?.name?.[0]?.toUpperCase() || '?'}
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-[13px] font-semibold">{user?.name}</span>
-            <span className="text-[10px] font-bold uppercase tracking-wide text-gold-2">Local</span>
-          </div>
-        </div>
+        <TopBarActions />
       </div>
     </div>
   )
