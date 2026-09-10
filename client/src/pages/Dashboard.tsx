@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Plus, ArrowDownToLine, ArrowUpFromLine, Landmark, Wallet, Smartphone,
-  PiggyBank, TrendingUp, CreditCard, DollarSign, ChevronRight, SlidersHorizontal, Check,
+  Plus, ArrowDownToLine, ArrowUpFromLine, DollarSign, ChevronRight, SlidersHorizontal, Check,
   Filter, ArrowUpNarrowWide,
 } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { useFetch } from '@/hooks/useFetch'
 import { api } from '@/lib/api'
-import { ARS, money, MONTHS_SHORT } from '@/lib/format'
+import { ARS, MONTHS_SHORT } from '@/lib/format'
 import { TopBar } from '@/components/layout/TopBar'
 import { Card, MovementRow, MovementsHeader, InteractiveDonut, EmptyState, AsyncGate, Button, Modal, Input, Select } from '@/components/ui'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
@@ -75,10 +74,16 @@ function SavingsDot({ cx, cy, index, value, lastIndex }: any) {
   }
   const label = `${value >= 0 ? '+ ' : '− '}${ARS(Math.abs(value))}`
   const w = Math.max(58, label.length * 7 + 20)
+  // Si el punto está muy arriba del gráfico (el mes con más ahorro acumulado), la
+  // burbuja arriba (cy - 38) se sale del área dibujable y queda cortada contra el
+  // borde de la tarjeta — se ve como un rectángulo negro flotando. Con el punto a
+  // menos de 40px del techo, la burbuja se dibuja ABAJO del punto en vez de arriba.
+  const above = cy > 40
+  const bubbleY = above ? cy - 38 : cy + 12
   return (
     <g>
       <circle cx={cx} cy={cy} r={6} fill="var(--c-accent)" stroke="var(--c-panel)" strokeWidth={3} />
-      <foreignObject x={cx - w / 2} y={cy - 38} width={w} height={26}>
+      <foreignObject x={cx - w / 2} y={bubbleY} width={w} height={26}>
         <div className="w-full h-full flex items-center justify-center rounded-full bg-chrome text-white text-[11px] font-normal whitespace-nowrap px-2 shadow-md">
           {label}
         </div>
@@ -189,21 +194,6 @@ function FxPicker({ selected, onChange }: { selected: string[]; onChange: (next:
   )
 }
 
-// Un ícono por tipo de cuenta — nada de logos de tarjetas ajenas, esto es genérico y
-// se arma solo con lo que el usuario tipeó al crear la cuenta.
-const ACCOUNT_ICON: Record<string, typeof Wallet> = {
-  CASH: Wallet,
-  BANK: Landmark,
-  MERCADO_PAGO: Smartphone,
-  RESERVE: PiggyBank,
-  WALLET: Wallet,
-  BROKER: TrendingUp,
-  OTHER: CreditCard,
-}
-const ACCOUNT_LABEL: Record<string, string> = {
-  CASH: 'Efectivo', BANK: 'Banco', MERCADO_PAGO: 'Mercado Pago',
-  RESERVE: 'Reserva', WALLET: 'Wallet', BROKER: 'Broker', OTHER: 'Otra',
-}
 
 // Anillo de progreso — el mismo lenguaje visual que las donas "75%"/"50%" del Figma,
 // con el número real adentro (nunca inventado). El Figma le pone un glow de color
@@ -435,53 +425,16 @@ export function Dashboard() {
             )}
           </Card>
 
-          {/* En md (2 columnas) este es el 3er ítem de una fila de 2 — el grid lo
-              manda solo a una fila nueva y ocupa una sola columna, dejando la otra
-              mitad de la fila vacía. col-span-2 + flex-row acá lo estira a lo ancho
-              (Salud y Cuentas lado a lado) para que no quede ese hueco; en xl vuelve
-              a ser la columna angosta apilada de siempre. */}
-          <div className="flex flex-col gap-4 md:col-span-2 md:flex-row xl:col-span-1 xl:flex-col">
-            {health && (health.totals?.income > 0 || health.totals?.expense > 0 || health.score > 0) && (
-              <CompactHealthCard health={health} className="md:flex-1 xl:flex-none" />
-            )}
-            <Card className="md:flex-1 xl:flex-none">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-title">Tus Cuentas</h3>
-                <Link to="/cuentas" className="w-8 h-8 rounded-full bg-panel-2 hover:bg-line flex items-center justify-center text-txt-3 hover:text-txt transition-colors">
-                  <Plus size={15} />
-                </Link>
-              </div>
-              {!accts?.length ? (
-                <EmptyState icon="🏦" title="Sin cuentas" description="Creá Efectivo, Banco o lo que uses." action={<Link to="/cuentas"><Button variant="primary">+ Nueva cuenta</Button></Link>} />
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {accts.slice(0, 3).map((a: any, i: number) => {
-                    const Icon = ACCOUNT_ICON[a.type] ?? CreditCard
-                    const dark = i % 2 === 1
-                    return (
-                      <div key={a.id} className={`rounded-[20px] px-5 py-4 flex items-center gap-3 ${dark ? 'bg-chrome text-white' : 'bg-panel-2 text-txt'}`}>
-                        <span className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${dark ? 'bg-white/10' : 'bg-white'}`}>
-                          <Icon size={17} strokeWidth={2} className={dark ? 'text-white' : 'text-txt-2'} />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="font-medium text-[14px] truncate">{a.name}</div>
-                          <div className={`text-[11px] ${dark ? 'text-white/50' : 'text-txt-3'}`}>{ACCOUNT_LABEL[a.type] ?? a.type}</div>
-                        </div>
-                        <div className={`font-mono font-normal text-[16px] tabular-nums text-right ${a.balance < 0 ? 'text-danger' : ''}`}>
-                          {money(a.balance, a.currency)}
-                        </div>
-                      </div>
-                    )
-                  })}
-                  {accts.length > 3 && (
-                    <Link to="/cuentas" className="text-center text-[12px] text-txt-3 hover:text-accent-2 transition-colors">
-                      +{accts.length - 3} cuenta{accts.length - 3 === 1 ? '' : 's'} más
-                    </Link>
-                  )}
-                </div>
-              )}
-            </Card>
-          </div>
+          {/* Tus Cuentas ya vive en /cuentas — tenerla acá también, apilada abajo de
+              Salud Financiera, dejaba un hueco vacío grande en esta columna cuando
+              tenía pocas cuentas (la columna quedaba mucho más corta que Balance
+              Total/Evolución, que tienen alto fijo). Con Salud Financiera sola y
+              estirada a esa misma altura, no queda espacio en blanco. */}
+          {health ? (
+            <CompactHealthCard health={health} className="xl:h-[300px]" />
+          ) : (
+            <Card className="xl:h-[300px]" />
+          )}
         </div>
 
         {/* ── Fila 2: Ingreso | Egreso | Cotización  +  Análisis IA ──

@@ -30,7 +30,15 @@ interface Props {
 // header, así que si una columna usa "auto" su ancho depende del contenido de ESA
 // fila — "$8.000" y "$114.000" miden distinto y las columnas quedan escalonadas en
 // vez de alineadas como una tabla real. Con ancho fijo, header y filas coinciden.
-const GRID = 'grid-cols-[40px_1fr_112px_120px_152px_32px]'
+//
+// Responsive en 3 pisos, no solo "hidden" en Fecha/Categoría: ocultar un ítem con
+// display:none lo saca del grid, pero la plantilla de columnas (fija) seguía
+// reservando sus 120px/152px igual — en una tarjeta angosta eso dejaba CASI TODO el
+// ancho para columnas fijas vacías y el Nombre (1fr) se achicaba a 0, invisible. Acá
+// la plantilla en sí cambia por breakpoint, así una columna oculta libera su espacio
+// de verdad. Los breakpoints (md para Fecha, lg para Categoría) tienen que coincidir
+// exacto con los "hidden md:/lg:" de abajo — si no, quedan columnas fantasma vacías.
+const GRID = 'grid-cols-[40px_1fr_96px_32px] md:grid-cols-[40px_1fr_104px_110px_32px] lg:grid-cols-[40px_1fr_112px_120px_152px_32px]'
 
 /**
  * Fila de movimiento — misma que usan el Dashboard ("Últimos Movimientos") y la tabla
@@ -59,12 +67,12 @@ export function MovementRow({ m, showAccount, onEdit, onDelete }: Props) {
         {m.currency ? money(m.amount, m.currency) : ARS(m.amount)}
       </span>
 
-      <span className="text-[12.5px] text-txt-3 whitespace-nowrap hidden sm:inline">{fmtDate(m.date)}</span>
+      <span className="text-[12.5px] text-txt-3 whitespace-nowrap hidden md:inline">{fmtDate(m.date)}</span>
 
       {/* Pill con puntito — el mismo lenguaje "• Paid / • Overdue" de la referencia,
           con el color real de la categoría (no un estado inventado que esta app no
           tiene). El presupuesto de proyecto, si tiene, va como segunda pill. */}
-      <div className="hidden sm:flex flex-wrap items-center gap-1.5 max-w-full">
+      <div className="hidden lg:flex flex-wrap items-center gap-1.5 max-w-full">
         {m.category && (
           <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold px-2.5 py-1 rounded-full max-w-full" style={{ background: `${m.category.color}22`, color: m.category.color }}>
             <span className="w-1 h-1 rounded-full shrink-0" style={{ background: m.category.color }} />
@@ -88,15 +96,20 @@ export function MovementRow({ m, showAccount, onEdit, onDelete }: Props) {
  * (Nombre / Monto / Fecha / Categoría). Sin línea divisoria entre filas abajo (la
  * separación es solo espacio + hover), igual que la tabla de referencia. */
 export function MovementsHeader() {
+  // px-2 -mx-2 (igual que MovementRow, no solo px-2): la fila usa ese combo para que
+  // el hover pinte 8px más ancho que el contenido sin mover el contenido — pero eso
+  // hace que el CONTENIDO de la fila arranque 8px más a la izquierda que el header
+  // (que no tenía el -mx-2 cancelando el padding). Con el mismo combo acá, header y
+  // filas arrancan en el mismo píxel en las 6 columnas, no solo en la primera.
   return (
-    <div className={`grid ${GRID} gap-4 px-2 pb-3 text-[11px] font-medium text-txt-3`}>
+    <div className={`grid ${GRID} gap-4 px-2 -mx-2 pb-3 text-[11px] font-medium text-txt-3`}>
       {/* "Nombre" pisa la columna del ícono (col-span-2) en vez de dejarla vacía —
           si no, el label arranca 56px más a la derecha que el título de la tarjeta
           de arriba y toda la tabla se ve "corrida" respecto al resto de la card. */}
       <span className="col-span-2">Nombre</span>
       <span>Monto</span>
-      <span className="hidden sm:inline">Fecha</span>
-      <span className="hidden sm:inline">Categoría</span>
+      <span className="hidden md:inline">Fecha</span>
+      <span className="hidden lg:inline">Categoría</span>
       <span />
     </div>
   )
