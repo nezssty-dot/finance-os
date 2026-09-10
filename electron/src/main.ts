@@ -219,7 +219,10 @@ async function initDatabase(prisma: PrismaLike) {
 async function startServer(): Promise<string> {
   Object.assign(process.env, loadOrCreateSecrets());
 
-  process.env.DATABASE_URL = `file:${dbPath}`;
+  // En Windows dbPath viene con backslashes (path.join usa el separador del SO). Una
+  // file: URL con backslashes es ambigua para el parser de conexión de Prisma — se
+  // normaliza a forward slashes, que es lo que Prisma espera en cualquier plataforma.
+  process.env.DATABASE_URL = `file:${dbPath.replace(/\\/g, "/")}`;
   // The desktop app is served over plain http://127.0.0.1, where the browser
   // refuses to send `secure` cookies — so the refresh cookie must not be one.
   process.env.COOKIE_SECURE = "false";

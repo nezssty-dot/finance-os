@@ -81,7 +81,7 @@ export function Objetivos() {
 
   return (
     <>
-      <TopBar title="Ahorro y Presupuestos" sub={avg > 0 ? `Ahorrás ${ARS(avg)} por mes en promedio` : undefined} />
+      <TopBar title="Ahorro" sub={avg > 0 ? `Ahorrás ${ARS(avg)} por mes en promedio` : undefined} />
       <div className="p-7 animate-fade-in">
         <div className="mb-4">
           <Button variant="primary" onClick={() => setOpen(true)}>+ Nuevo objetivo</Button>

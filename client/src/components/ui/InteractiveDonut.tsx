@@ -11,6 +11,11 @@ interface Props {
   slices: DonutSlice[]
   size?: number
   currency?: string
+  /** false = solo el círculo, centrado, sin la lista al lado — el detalle de cada
+   * porción se ve tocándola (adentro del centro), no en una lista aparte que crece
+   * con la cantidad de categorías y termina estirando la tarjeta. Default true, para
+   * no tocar las pantallas que ya usan la lista (Reportes). */
+  legend?: boolean
 }
 
 /**
@@ -19,7 +24,7 @@ interface Props {
  * porcentaje y monto. Pensada para que se entienda de un vistazo, sin tener que leer números
  * chiquitos. Un clic la fija; otro clic la suelta.
  */
-export function InteractiveDonut({ slices, size = 190, currency = 'ARS' }: Props) {
+export function InteractiveDonut({ slices, size = 190, currency = 'ARS', legend = true }: Props) {
   const [hover, setHover] = useState<number | null>(null)
   const [locked, setLocked] = useState<number | null>(null)
   const active = hover ?? locked
@@ -64,7 +69,7 @@ export function InteractiveDonut({ slices, size = 190, currency = 'ARS' }: Props
   const toggle = (i: number) => setLocked((prev) => (prev === i ? null : i))
 
   return (
-    <div className="flex gap-6 items-center flex-wrap">
+    <div className={legend ? 'flex gap-6 items-center flex-wrap' : 'flex justify-center'}>
       <div className="relative shrink-0" style={{ width: size, height: size }}>
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }}>
           {arcs.map((a) => (
@@ -115,6 +120,7 @@ export function InteractiveDonut({ slices, size = 190, currency = 'ARS' }: Props
         </div>
       </div>
 
+      {legend && (
       <div className="flex-1 min-w-[160px] flex flex-col gap-1">
         {arcs.map((a) => (
           <button
@@ -140,6 +146,7 @@ export function InteractiveDonut({ slices, size = 190, currency = 'ARS' }: Props
           </button>
         ))}
       </div>
+      )}
     </div>
   )
 }

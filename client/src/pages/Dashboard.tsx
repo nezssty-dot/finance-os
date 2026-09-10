@@ -245,7 +245,6 @@ export function Dashboard() {
   const { year } = useStore()
   const { data: dash, loading: ld, error: dashErr, refetch: dashRefetch } = useFetch<any>(`/analysis/dashboard?year=${year}`, [year])
   const { data: ins } = useFetch<any>(`/analysis/insights?year=${year}`, [year])
-  const { data: svcSummary } = useFetch<any>('/services/summary')
   const { data: health } = useFetch<any>('/analysis/health')
   const { data: cats } = useFetch<any[]>('/categories')
   const { data: accts } = useFetch<any[]>('/accounts')
@@ -313,7 +312,6 @@ export function Dashboard() {
   const incomePct = monthTotal > 0 ? (monthIncome / monthTotal) * 100 : 0
   const expensePct = monthTotal > 0 ? (monthExpense / monthTotal) * 100 : 0
 
-  const committedARS = svcSummary?.committedRemaining?.ARS ?? 0
   // Lo más importante primero: alerta > atención > el resto, en el orden que ya viene.
   const insightsList: any[] = ins?.insights || []
   const topInsight =
@@ -351,9 +349,14 @@ export function Dashboard() {
         {/* ── Fila 1: Balance Total | Evolución de Ahorro | Salud financiera + Tus Cuentas ──
             Apilado en ventana angosta, 2 columnas a partir de md, las 3 juntas recién
             en xl — así se ve bien tanto en una mitad de pantalla como maximizada. */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1fr_1fr_380px] gap-4">
+        {/* xl:items-start — sin esto, las 3 columnas se estiran parejo a la más alta
+            (la de Salud+Cuentas, que crece con la cantidad de cuentas), y Balance Total
+            queda con un hueco enorme en el medio. Con items-start cada columna mide lo
+            que su propio contenido pide; min-h-[300px] en Balance Total y Evolución
+            (abajo) las empareja entre sí, sin depender de lo que haga la tercera. */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1fr_1fr_380px] gap-4 xl:items-start">
           <div
-            className="relative rounded-card p-6 flex flex-col justify-between overflow-hidden"
+            className="relative rounded-card p-6 flex flex-col justify-between overflow-hidden xl:min-h-[300px]"
             style={{ background: 'var(--c-accent)', boxShadow: '0 16px 40px -12px rgba(0,255,107,.45)' }}
           >
             {/* Glow suave arriba a la derecha — el mismo lenguaje "con vida" que los
@@ -385,7 +388,7 @@ export function Dashboard() {
             </div>
           </div>
 
-          <Card>
+          <Card className="xl:min-h-[300px]">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-title">Evolución de Ahorro</h3>
               <div className="flex items-center gap-2">
@@ -481,14 +484,19 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* ── Fila 2: Ingreso | Egreso | Cotización  +  Análisis IA ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_380px] gap-4">
+        {/* ── Fila 2: Ingreso | Egreso | Cotización  +  Análisis IA ──
+            xl:items-start + xl:h-[280px] parejo en las 4 — sin esto, Cotización (que
+            crece con la cantidad de monedas elegidas) o Análisis IA (texto variable)
+            estiran a Ingreso/Egreso, que quedan con un hueco enorme en el medio. Con
+            alto fijo la fila no se reacomoda sola cuando cambia el contenido — lo que
+            no entra en Cotización scrollea adentro de la tarjeta, no la agranda. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_380px] gap-4 xl:items-start">
           {/* Ingreso/Egreso: ícono + label + monto apilados a la izquierda, anillo grande
               con glow centrado verticalmente a la derecha — calcado del Figma (Frame
               33/34): ahí el anillo ocupa casi todo el alto de la tarjeta, no solo la
               fila de arriba, así que la columna de la izquierda y el anillo van uno al
               lado del otro en una sola fila que se estira a lo alto. */}
-          <Card className="flex items-center justify-between gap-4">
+          <Card className="flex items-center justify-between gap-4 xl:h-[280px]">
             <div className="flex flex-col gap-3 min-w-0">
               <img src={ingresoBadge} alt="" className="w-11 h-11 shrink-0" />
               <span className="text-[17px] font-medium text-txt">Ingreso</span>
@@ -497,7 +505,7 @@ export function Dashboard() {
             <Ring id="income" pct={incomePct} color="var(--c-success)" size={132} />
           </Card>
 
-          <Card className="flex items-center justify-between gap-4">
+          <Card className="flex items-center justify-between gap-4 xl:h-[280px]">
             <div className="flex flex-col gap-3 min-w-0">
               <img src={egresoBadge} alt="" className="w-11 h-11 shrink-0" />
               <span className="text-[17px] font-medium text-txt">Egreso</span>
@@ -506,13 +514,13 @@ export function Dashboard() {
             <Ring id="expense" pct={expensePct} color="var(--c-danger)" size={132} />
           </Card>
 
-          <Card>
+          <Card className="xl:h-[280px] xl:flex xl:flex-col">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-title">Cotización</h3>
               <FxPicker selected={fxSelected} onChange={setFxSelected} />
             </div>
             {fx?.quotes?.length > 0 ? (
-              <div className="flex flex-col gap-3.5">
+              <div className="flex flex-col gap-3.5 xl:flex-1 xl:overflow-y-auto xl:pr-1">
                 {fx.quotes
                   .filter((q: any) => fxSelected.includes(q.kind))
                   .sort((a: any, b: any) => FX_ORDER.indexOf(a.kind) - FX_ORDER.indexOf(b.kind))
@@ -560,14 +568,16 @@ export function Dashboard() {
             )}
           </Card>
 
-          <Card highlight className="flex flex-col">
+          <Card highlight className="flex flex-col xl:h-[280px]">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-title text-accent-2">Análisis IA</h3>
             </div>
             {/* Solo lo más importante acá — el resto vive en /insights. Antes esta
-                tarjeta se estiraba con hasta 4 ítems y desbalanceaba la fila. */}
+                tarjeta se estiraba con hasta 4 ítems y desbalanceaba la fila. Si el
+                texto es largo, scrollea adentro (xl:overflow-y-auto) en vez de estirar
+                la tarjeta — el alto de la fila 2 no depende del contenido. */}
             {topInsight ? (
-              <p className="flex-1 text-[13px] text-txt-2 leading-relaxed">
+              <p className="flex-1 text-[13px] text-txt-2 leading-relaxed xl:overflow-y-auto">
                 <span className="text-accent-2 mr-1">›</span>{topInsight.text}
               </p>
             ) : (
@@ -597,25 +607,13 @@ export function Dashboard() {
                 </Link>
               </div>
             </div>
-            {svcSummary?.nextPayment && (
-              <Link to="/servicios" className="block mb-3 -mx-1 px-4 py-3 rounded-[14px] bg-panel-2 hover:bg-line transition-colors">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <div className="text-[11px] uppercase tracking-wider text-txt-3 font-medium">Próximo pago</div>
-                  <div className="text-[13px] font-medium">
-                    {svcSummary.nextPayment.name} <span className="text-txt-3 font-normal">· {nextPaymentWhen(svcSummary.nextPayment.dueDate)}</span>
-                  </div>
-                  <div className="flex-1" />
-                  <div className="font-mono font-medium text-[14px]">
-                    {svcSummary.nextPayment.currency === 'ARS' ? ARS(svcSummary.nextPayment.amount) : `${svcSummary.nextPayment.currency} ${svcSummary.nextPayment.amount.toLocaleString('es-AR')}`}
-                  </div>
-                  {committedARS > 0 && <div className="text-[11px] text-txt-3">Comprometido: {ARS(committedARS)}</div>}
-                </div>
-              </Link>
-            )}
             {dash.recent.length ? (
               <>
                 <MovementsHeader />
-                {dash.recent.map((m: any) => <MovementRow key={m.id} m={m} />)}
+                {/* Solo los últimos 4 acá — es un resumen, no la tabla completa. Para
+                    ver todo está el link "Ver todos" (o el ícono de filtro/orden) que
+                    lleva a /movimientos. */}
+                {dash.recent.slice(0, 4).map((m: any) => <MovementRow key={m.id} m={m} />)}
               </>
             ) : <EmptyState icon="💸" title="Sin movimientos" />}
           </Card>
@@ -651,10 +649,12 @@ export function Dashboard() {
                       Total: {ARS(categories.reduce((s: number, c: any) => s + c.amount, 0))}
                     </span>
                   </div>
-                  {/* size más chico que antes (160 → 128): en la columna de 380px, un donut
-                      de 160 + la leyenda no entraban en la misma fila y la leyenda se caía
-                      abajo dejando toda la mitad de la tarjeta en blanco. */}
-                  <InteractiveDonut size={128} slices={categories.map((c: any) => ({ name: c.name, value: c.amount, color: c.color }))} />
+                  {/* Sin leyenda al lado (legend=false): el detalle de cada categoría se
+                      ve tocándola, adentro del círculo — así el alto de la tarjeta no
+                      depende de cuántas categorías haya (una lista de 3 o de 30 category
+                      ocupa lo mismo: nada, porque no hay lista). Más grande que antes
+                      (128 → 220) porque ahora tiene toda la tarjeta para él solo. */}
+                  <InteractiveDonut size={220} legend={false} slices={categories.map((c: any) => ({ name: c.name, value: c.amount, color: c.color }))} />
                 </>
               ) : (
                 <EmptyState icon="🏷️" title="Sin gastos categorizados" />
@@ -707,14 +707,3 @@ export function Dashboard() {
   )
 }
 
-// "hoy", "mañana" o la fecha corta, para el próximo pago del dashboard.
-function nextPaymentWhen(iso: string): string {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const date = new Date(iso + 'T00:00:00')
-  const diff = Math.round((date.getTime() - today.getTime()) / 86_400_000)
-  if (diff <= 0) return 'hoy'
-  if (diff === 1) return 'mañana'
-  if (diff <= 7) return `en ${diff} días`
-  return date.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
-}

@@ -4,7 +4,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Receipt, Calendar,
-  PieChart, Target, Flag, Sparkles,
+  PieChart, Target, Sparkles,
   FileText, MoreHorizontal,
 } from 'lucide-react'
 
@@ -30,7 +30,6 @@ const NAV = [
   ]},
   { group: 'Planificación', items: [
     { to: '/presupuestos', label: 'Presupuestos', Icon: Target },
-    { to: '/objetivos', label: 'Ahorro y Presupuestos', Icon: Flag },
     { to: '/insights', label: 'Insights', Icon: Sparkles },
   ]},
   { group: 'Sistema', items: [
@@ -77,6 +76,7 @@ export function Sidebar() {
     '/forecast': '/mas',
     '/cuentas': '/mas', '/servicios': '/mas',
     '/inversiones': '/mas', '/deudas': '/mas',
+    '/objetivos': '/mas',
     // Importar ahora se entra desde un botón en Movimientos, no desde Más.
     '/importar': '/movimientos',
   }

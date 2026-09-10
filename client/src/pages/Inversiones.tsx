@@ -202,7 +202,12 @@ export function Inversiones() {
           <Input name="name" label="Nombre" placeholder="Ej: Dólar blue, BTC Binance…" required />
           <div className="grid grid-cols-2 gap-3">
             <Select name="kind" label="Tipo">{KINDS.map((k) => <option key={k} value={k}>{KIND_LABELS[k] ?? k}</option>)}</Select>
-            <Select name="currency" label="Moneda"><option value="ARS">ARS</option><option value="USD">USD</option></Select>
+            <Select name="currency" label="Moneda">
+              <option value="ARS">Pesos (ARS)</option>
+              <option value="USD">Dólares (USD)</option>
+              <option value="USDT">USDT</option>
+              <option value="EUR">Euros (EUR)</option>
+            </Select>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Input name="capital" label="Capital invertido" type="number" step="0.01" placeholder="0.00" required />

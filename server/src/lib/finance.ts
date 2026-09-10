@@ -7,6 +7,8 @@ import {
   ASSET_CLASS,
   type MovementLike,
 } from "./balance-math";
+import { latestQuotes } from "../integrations/fx/service";
+import { pickQuote, rateOf } from "./fx";
 
 export * from "./balance-math";
 
@@ -81,9 +83,28 @@ export interface Patrimonio {
   debts: any[];
 }
 
+/**
+ * Un peso por cada moneda no-ARS que el patrimonio sabe convertir, usando cotizaciones
+ * REALES ya guardadas (nunca inventadas — sin cotización del día, esa moneda queda
+ * afuera del total en ARS, igual que hacía antes con USD).
+ *
+ * USD y USDT comparten el dólar MEP (USDT es una stablecoin 1:1 con el dólar — no hay
+ * "MEP del USDT" separado). EUR usa la cotización de dolarapi que ya se guarda en
+ * FxRate con kind="EUR" (ver integrations/fx/service.ts).
+ */
+async function fxRatesByCurrency(): Promise<Record<string, number>> {
+  const quotes = await latestQuotes();
+  const mep = rateOf(pickQuote(quotes));
+  const eur = quotes.find((q) => q.kind === "EUR");
+  const rates: Record<string, number> = {};
+  if (mep) { rates.USD = mep; rates.USDT = mep; }
+  if (eur) { const r = rateOf(eur); if (r) rates.EUR = r; }
+  return rates;
+}
+
 /** Net worth, always current. Nothing here is cached or stored. */
 export async function patrimonio(userId: string): Promise<Patrimonio> {
-  const [accounts, investments, holdings, debts] = await Promise.all([
+  const [accounts, investments, holdings, debts, fxRates] = await Promise.all([
     accountBalances(userId),
     prisma.investment.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
     // Tenencias sincronizadas de brokers (IOL). Se guardan en Holding vía upsert; acá se
@@ -92,6 +113,7 @@ export async function patrimonio(userId: string): Promise<Patrimonio> {
     // las abiertas (las cerradas quedan de historial, no suman).
     prisma.holding.findMany({ where: { userId, closed: false }, orderBy: { totalValue: "desc" } }),
     prisma.debt.findMany({ where: { userId, settled: false } }),
+    fxRatesByCurrency(),
   ]);
 
   const breakdown = { pesos: 0, usd: 0, crypto: 0, stocks: 0, funds: 0 };
@@ -144,14 +166,22 @@ export async function patrimonio(userId: string): Promise<Patrimonio> {
 
   const disponibleByCurrency = balancesByCurrency(accounts);
 
+  // El neto principal se lleva en ARS: entran las cuentas y las inversiones en pesos,
+  // MÁS lo que está en una moneda con cotización real guardada (USD, USDT, EUR — ver
+  // fxRatesByCurrency), convertido al tipo de cambio del día. Lo que está en una
+  // moneda SIN cotización se deja afuera del total (no se inventa un valor), pero
+  // sigue visible en disponibleByCurrency/invertidoByCurrency tal cual está.
+  const toARS = (amount: number, currency: string): number | null => {
+    if (currency === "ARS") return amount;
+    const rate = fxRates[currency];
+    return rate ? amount * rate : null;
+  };
+
   // Only the part still outstanding counts — a debt half paid is half a debt.
   const left = (d: any) => outstanding(Number(d.amount), Number(d.paid));
   const totals = netWorth({
-    // El neto principal se lleva en ARS: entran las cuentas y las inversiones en pesos.
-    // Lo que está en dólares (efectivo o invertido) se muestra por separado, para no
-    // sumar peras con manzanas.
-    balances: accounts.filter((a) => a.currency === "ARS").map((a) => a.balance),
-    investmentValues: allInvestments.filter((r) => r.currency === "ARS").map((r) => r.currentValue),
+    balances: accounts.map((a) => toARS(a.balance, a.currency)).filter((v): v is number => v !== null),
+    investmentValues: allInvestments.map((r) => toARS(r.currentValue, r.currency)).filter((v): v is number => v !== null),
     owe: debts.filter((d: any) => d.kind === "OWE").map(left),
     owed: debts.filter((d: any) => d.kind === "OWED").map(left),
   });

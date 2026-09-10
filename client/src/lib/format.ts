@@ -9,14 +9,22 @@ export const ARS = (n: number) =>
  * en dólares diría "$500" como si fueran pesos. Cualquier saldo que pueda no ser ARS
  * tiene que pasar por acá.
  */
-export const money = (n: number, currency = 'ARS') =>
-  currency === 'ARS'
-    ? ARS(n)
-    : new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency,
-        maximumFractionDigits: 2,
-      }).format(n || 0)
+// USDT no es un código ISO 4217 — Intl.NumberFormat con style:"currency" tira
+// RangeError ("Invalid currency code") y se lleva puesta la pantalla entera. Para esa
+// (y cualquier otra moneda que Intl no reconozca) se arma el número a mano y se le
+// antepone el código, en vez de asumir que currency siempre es válida para Intl.
+export const money = (n: number, currency = 'ARS') => {
+  if (currency === 'ARS') return ARS(n)
+  try {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 2,
+    }).format(n || 0)
+  } catch {
+    return `${currency} ${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 2 }).format(n || 0)}`
+  }
+}
 
 export const fmtDate = (iso: string) => {
   try { return new Date(iso).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }) }

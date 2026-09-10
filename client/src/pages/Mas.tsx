@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Activity, Tag, ShieldCheck, LineChart, Landmark, Repeat, TrendingUp, CreditCard } from 'lucide-react'
+import { Activity, Tag, ShieldCheck, LineChart, Landmark, Repeat, TrendingUp, CreditCard, Flag } from 'lucide-react'
 import { TopBar } from '@/components/layout/TopBar'
 import { Card } from '@/components/ui'
 
@@ -14,6 +14,7 @@ const ITEMS = [
   { to: '/servicios', label: 'Servicios', desc: 'Suscripciones y pagos recurrentes.', Icon: Repeat },
   { to: '/inversiones', label: 'Inversiones', desc: 'Lo que tenés invertido.', Icon: TrendingUp },
   { to: '/deudas', label: 'Deudas', desc: 'Lo que debés y a quién.', Icon: CreditCard },
+  { to: '/objetivos', label: 'Ahorro', desc: 'Metas de ahorro, con movimientos reales asignados.', Icon: Flag },
   { to: '/timeline', label: 'Timeline', desc: 'Tu actividad día a día en una línea de tiempo.', Icon: Activity },
   { to: '/categorias', label: 'Categorías', desc: 'Creá, fusioná y ordená tus categorías.', Icon: Tag },
   { to: '/auditoria', label: 'Auditoría', desc: 'Revisá que tus balances del mes cierren.', Icon: ShieldCheck },
